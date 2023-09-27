@@ -1,17 +1,12 @@
-// #![feature(async_fn_in_trait)]
-// #![feature(impl_trait_in_assoc_type)]
-
 use std::sync::Arc;
 
-use axum::Router;
 use state::AppState;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 mod api;
 mod auth;
+mod db;
 mod env_config;
-mod pg;
-mod redis;
 mod repositories;
 mod state;
 
