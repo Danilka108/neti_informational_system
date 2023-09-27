@@ -1,0 +1,43 @@
+version: '3.4'
+
+services:
+  pg_db:
+    image: 'postgres:15-alpine'
+    environment:
+      POSTGRES_USER: "${PG_USERNAME}"
+      POSTGRES_PASSWORD: "${PG_PASSWORD}"
+      POSTGRES_DB: "${PG_DBNAME}"
+      PG_DATA: "pg_db_data:/data/postgres"
+    volumes:
+      #      - .:/docker-entrypoint-initdb.d
+      - pg_db_data:/data/postgres
+    ports:
+      - "5432:5432"
+    restart: always
+    env_file:
+      - ./.env
+    networks:
+      - university_info_system
+
+  redis_db:
+    image: 'redis:7.2.1-alpine'
+    ports:
+      - "6379:6379"
+    restart: always
+    command: redis-server /usr/local/etc/redis.conf
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis.conf
+      - redis_db_data:/var/lib/redis
+    networks:
+      - university_info_system
+
+volumes:
+  pg_db_data:
+  redis_db_data:
+
+networks:
+  university_info_system:
+    driver: bridge
+#    ipam:
+#      config:
+#        - subnet: 172.20.0.0/24
