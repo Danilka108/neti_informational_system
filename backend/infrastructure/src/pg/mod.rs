@@ -1,3 +1,6 @@
+mod transaction;
+mod user_repository;
+
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
     ConnectOptions, Pool, Postgres,

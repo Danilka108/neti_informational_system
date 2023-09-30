@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users
 (
   id serial PRIMARY KEY,
   email varchar(255) NOT NULL UNIQUE,
-  password varchar(255) NOT NULL
+  password bytea NOT NULL
 );
 
 -- CREATE DOMAIN years AS integer CONSTRAINT years_check

@@ -820,9 +820,11 @@ dependencies = [
 name = "infrastructure"
 version = "0.1.0"
 dependencies = [
+ "app",
  "async-trait",
  "axum",
  "axum-extra",
+ "domain",
  "dotenv",
  "envy",
  "http",
@@ -831,6 +833,7 @@ dependencies = [
  "log",
  "mobc",
  "redis",
+ "ring",
  "serde",
  "serde_json",
  "sqlx",

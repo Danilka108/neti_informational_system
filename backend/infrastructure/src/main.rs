@@ -1,13 +1,16 @@
+#![feature(async_fn_in_trait)]
+#![feature(impl_trait_projections)]
+
 use std::sync::Arc;
 
 use state::AppState;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 mod api;
-mod auth;
-mod db;
 mod env_config;
-mod repositories;
+mod pg;
+mod redis;
+mod security;
 mod state;
 
 #[tokio::main]

@@ -1,8 +1,8 @@
+use crate::pg::init_pg_conn_pool;
 use crate::{
-    auth::gen_jwt_keys,
-    db::pg::init_pg_conn_pool,
-    db::redis::{init_redis_conn_pool, RedisConnectionManager},
     env_config::EnvConfig,
+    redis::{init_redis_conn_pool, RedisConnectionManager},
+    security::auth::gen_jwt_keys,
 };
 
 pub struct AppState {

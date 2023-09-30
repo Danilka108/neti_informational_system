@@ -15,12 +15,6 @@ async fn login(
     State(app_state): State<Arc<AppState>>,
     Json(payload): Json<LoginPayload>,
 ) -> impl IntoResponse {
-    struct FetchRes {
-        id: i32,
-        email: Box<str>,
-        password: Box<str>,
-    }
-
     let a = sqlx::query!("SELECT * FROM users WHERE email = $1", "test@test.test")
         .fetch_one(app_state.pg_pool())
         .await

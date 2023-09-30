@@ -10,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 mod check_role;
 mod error;
+
 pub mod roles;
 
 pub fn gen_jwt_keys(env_config: &EnvConfig) -> (EncodingKey, DecodingKey) {
