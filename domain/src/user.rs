@@ -1,10 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Hash)]
+use crate::Role;
+
+#[derive(Serialize, Deserialize, Hash, Clone, Debug)]
 pub struct User<Id = i32> {
     pub id: Id,
-    pub email: Box<str>,
-    pub password: Box<[u8]>,
+    pub email: String,
+    pub password: Vec<u8>,
+    pub role: Role,
 }
 
 impl PartialEq for User<i32> {
