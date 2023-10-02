@@ -1,75 +1,108 @@
-use crate::api::{PasswordEncoder, Transaction, TransactionBuilder, UserRepository};
-use domain::User;
+use crate::api::{PasswordEncoder, UserRepository};
+use anyhow::Context;
+use domain::{Role, User};
 
-pub struct UserService<T, P> {
-    tx_builder: T,
-    password_encoder: P,
+pub struct UserService<Repo, Encoder> {
+    repository: Repo,
+    password_encoder: Encoder,
 }
 
-enum UserServiceError {
+#[derive(thiserror::Error, Debug)]
+pub enum CreateError {
+    #[error("email already in use")]
     EmailAlreadyInUse,
-    InvalidEmailOrPassword,
-    RepoError(Box<dyn std::error::Error>),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
 }
 
-impl<T, P> UserService<T, P>
+#[derive(thiserror::Error, Debug)]
+pub enum AuthenticateError {
+    #[error("invalid login or password")]
+    InvalidLoginOrPassword,
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+}
+
+impl<RepoTransaction, Repo, Encoder> UserService<Repo, Encoder>
 where
-    T: TransactionBuilder,
-    T::Transaction: UserRepository,
-    P: PasswordEncoder,
+    Repo: UserRepository<Transaction = RepoTransaction>,
+    Encoder: PasswordEncoder,
 {
-    pub fn new(transaction_builder: T, password_encoder: P) -> Self {
+    pub fn new(repository: Repo, password_encoder: Encoder) -> Self {
         Self {
-            tx_builder: transaction_builder,
+            repository,
             password_encoder,
         }
     }
 
-    pub async fn create(
-        self,
-        email: Box<str>,
-        password: Box<str>,
-    ) -> Result<User, UserServiceError> {
-        let mut tx = self.tx_builder.begin().await?;
+    pub(crate) async fn get_user(
+        &self,
+        transaction: &mut RepoTransaction,
+        id: i32,
+    ) -> Result<Option<User>, anyhow::Error> {
+        self.repository
+            .find(transaction, id)
+            .await
+            .context("failed to read from user repository")
+    }
 
-        let None = tx.find_by_email(&email).await? else {
-            return Err(UserServiceError::EmailAlreadyInUse);
+    pub async fn create(
+        &mut self,
+        transaction: &mut RepoTransaction,
+        login: String,
+        role: Role,
+        password: String,
+    ) -> Result<User, CreateError> {
+        let is_email_already_in_use = self
+            .repository
+            .find_by_email(transaction, &login)
+            .await
+            .context("failed to read from repository")?
+            .is_some();
+
+        if is_email_already_in_use {
+            return Err(CreateError::EmailAlreadyInUse);
+        }
+
+        let password = self.password_encoder.encode(&password);
+        let user = User {
+            id: (),
+            email: login,
+            role,
+            password,
         };
 
-        let encoded_password = self.password_encoder.encode(&password);
+        let user = self
+            .repository
+            .save(transaction, user)
+            .await
+            .context("failed to save to repository")?;
 
-        let user = tx
-            .save(User {
-                id: (),
-                email,
-                password: encoded_password,
-            })
-            .await?;
-
-        tx.commit().await?;
         Ok(user)
     }
 
-    pub async fn authorize(self, email: &str, password: &str) -> Result<User, UserServiceError> {
-        let mut tx = self.tx_builder.begin().await?;
+    pub async fn authenticate(
+        &mut self,
+        transaction: &mut RepoTransaction,
+        login: &str,
+        password: &str,
+    ) -> Result<User, AuthenticateError> {
+        let maybe_user = self
+            .repository
+            .find_by_email(transaction, &login)
+            .await
+            .context("failed to read from repository")?;
 
-        let Some(user) = tx.find_by_email(&email).await? else {
-            return Err(UserServiceError::InvalidEmailOrPassword);
+        let Some(user) = maybe_user else {
+            return Err(AuthenticateError::InvalidLoginOrPassword);
         };
 
         let is_password_matches = self.password_encoder.is_matches(password, &user.password);
 
         if !is_password_matches {
-            return Err(UserServiceError::InvalidEmailOrPassword);
+            return Err(AuthenticateError::InvalidLoginOrPassword);
         }
 
-        tx.commit().await?;
         Ok(user)
-    }
-}
-
-impl<E: std::error::Error + 'static> From<E> for UserServiceError {
-    fn from(value: E) -> Self {
-        Self::RepoError(Box::new(value))
     }
 }
