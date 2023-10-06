@@ -2,7 +2,11 @@
 resolver = "2"
 
 members = [
-  # "../domain",
   "app",
   "infrastructure",
 ]
+
+[workspace.dependencies]
+async-trait = { version = "0.1.73" }
+anyhow = { version = "1.0.75" }
+domain = { path = "../domain" }
