@@ -1,11 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+use crate::SecondsFromUnixEpoch;
+
 #[derive(Debug, Serialize, Deserialize, Hash, Clone)]
 pub struct Session {
     pub user_id: i32,
+    /// max len = 500
     pub metadata: String,
     pub refresh_token: String,
-    pub ttl_in_seconds: u64,
+    pub expires_at: SecondsFromUnixEpoch,
 }
 
 impl PartialEq for Session {
