@@ -1,4 +1,4 @@
-use crate::api::SessionRepository;
+use crate::api::{EntityDoesNotExistError, SessionRepository};
 use anyhow::Context;
 use domain::{Seconds, SecondsFromUnixEpoch, Session};
 
@@ -11,7 +11,7 @@ pub struct SessionService<T> {
 #[derive(Debug, thiserror::Error)]
 pub enum DeleteSessionError {
     #[error("session does not exist")]
-    SessionDoesNotExist,
+    SessionDoesNotExist(#[from] EntityDoesNotExistError),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
@@ -54,10 +54,7 @@ impl<T> SessionService<T> {
         tx: &mut T,
         session: Session,
     ) -> Result<Session, DeleteSessionError> {
-        self.repo
-            .delete(tx, session)
-            .await?
-            .ok_or(DeleteSessionError::SessionDoesNotExist)
+        Ok(self.repo.delete(tx, session).await??)
     }
 
     pub async fn validate_refresh_token(
@@ -103,13 +100,17 @@ impl<T> SessionService<T> {
             self.repo
                 .update(tx, session.clone())
                 .await
-                .context("failed to update session repository")?;
+                .context("failed to update session repository")?
+                .context("session existence is checked before updating it, but an error occurs")?;
         } else {
             self.check_user_limit(tx, session.user_id).await?;
             self.repo
                 .insert(tx, session.clone())
                 .await
-                .context("failed to insert into session repository")?;
+                .context("failed to insert into session repository")?
+                .context(
+                    "session not existence is checked before inserting it, but an error occurs",
+                )?;
         }
 
         Ok(session)

@@ -76,7 +76,7 @@ impl<T> UserService<T> {
             .insert(tx, user)
             .await
             .context("failed to insert to repository")?
-            .context("the same user already exist")?;
+            .context("user not existence is checked before inserting, but an error occurs")?;
 
         Ok(user)
     }

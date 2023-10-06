@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 use domain::User;
 
+use super::{EntityAlreadyExistError, EntityDoesNotExistError};
+
 #[async_trait]
 pub trait UserRepository {
     type Transaction;
@@ -9,13 +11,13 @@ pub trait UserRepository {
         &mut self,
         t: &mut Self::Transaction,
         user: domain::User<()>,
-    ) -> Result<Option<User>, anyhow::Error>;
+    ) -> Result<Result<User, EntityAlreadyExistError>, anyhow::Error>;
 
     async fn update(
         &mut self,
         t: &mut Self::Transaction,
         user: domain::User<()>,
-    ) -> Result<Option<User>, anyhow::Error>;
+    ) -> Result<Result<User, EntityDoesNotExistError>, anyhow::Error>;
 
     async fn find_by_email(
         &self,

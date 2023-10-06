@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 use domain::Session;
 
+use super::{EntityAlreadyExistError, EntityDoesNotExistError};
+
 #[async_trait]
 pub trait SessionRepository {
     type Transaction;
@@ -22,17 +24,17 @@ pub trait SessionRepository {
         &mut self,
         t: &mut Self::Transaction,
         session: Session,
-    ) -> Result<Option<Session>, anyhow::Error>;
+    ) -> Result<Result<Session, EntityAlreadyExistError>, anyhow::Error>;
 
     async fn update(
         &mut self,
         t: &mut Self::Transaction,
         session: Session,
-    ) -> Result<Option<Session>, anyhow::Error>;
+    ) -> Result<Result<Session, EntityDoesNotExistError>, anyhow::Error>;
 
     async fn delete(
         &mut self,
         t: &mut Self::Transaction,
         session: Session,
-    ) -> Result<Option<Session>, anyhow::Error>;
+    ) -> Result<Result<Session, EntityDoesNotExistError>, anyhow::Error>;
 }
