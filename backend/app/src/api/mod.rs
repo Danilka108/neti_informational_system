@@ -15,7 +15,3 @@ pub struct EntityAlreadyExistError;
 #[derive(Debug, thiserror::Error)]
 #[error("entity does not exist")]
 pub struct EntityDoesNotExistError;
-
-#[derive(Debug, thiserror::Error)]
-#[error("entity not found")]
-pub struct EntityNotFoundError;
