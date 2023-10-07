@@ -1,11 +1,26 @@
 DROP SCHEMA IF EXISTS public CASCADE;
 CREATE SCHEMA public;
 
-CREATE TABLE IF NOT EXISTS users
+CREATE TYPE role AS ENUM ('ADMIN');
+
+CREATE TABLE users
 (
-  id serial PRIMARY KEY,
+  id serial NOT NULL PRIMARY KEY,
   email varchar(255) NOT NULL UNIQUE,
+  role role NOT NULL,
   password bytea NOT NULL
+);
+
+CREATE TABLE sessions
+(
+  user_id serial NOT NULL
+    REFERENCES users
+    ON DELETE CASCADE,
+  metadata varchar(512) NOT NULL,
+  refresh_token varchar(1024) NOT NULL UNIQUE,
+  expires_at_in_seconds bigint NOT NULL CHECK (expires_at_in_seconds > 0),
+
+  PRIMARY KEY (user_id, metadata)
 );
 
 -- CREATE DOMAIN years AS integer CONSTRAINT years_check
