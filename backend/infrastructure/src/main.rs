@@ -1,6 +1,3 @@
-#![feature(async_fn_in_trait)]
-#![feature(impl_trait_projections)]
-
 use std::sync::Arc;
 
 use state::AppState;
@@ -9,7 +6,6 @@ use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::Subs
 mod api;
 mod env_config;
 mod pg;
-mod redis;
 mod security;
 mod state;
 
@@ -32,7 +28,7 @@ async fn main() {
     let env_config = match env_config::EnvConfig::try_load() {
         Ok(val) => val,
         Err(cause) => {
-            tracing::error!(%cause, "failed to load environment config");
+            tracing::error!(%cause, "failed to boot server");
             return;
         }
     };
@@ -40,7 +36,7 @@ async fn main() {
     let app_state = match AppState::new(env_config).await {
         Ok(val) => val,
         Err(cause) => {
-            tracing::error!(%cause, "failed to init application state");
+            tracing::error!(%cause, "failed to boot server");
             return;
         }
     };
