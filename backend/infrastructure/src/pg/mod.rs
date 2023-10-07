@@ -1,12 +1,16 @@
-mod transaction;
+mod session_repository;
 mod user_repository;
 
+use crate::env_config::EnvConfig;
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
     ConnectOptions, Pool, Postgres,
 };
 
-use crate::env_config::EnvConfig;
+pub use session_repository::PgSessionRepository;
+pub use user_repository::PgUserRepository;
+
+pub type PgTransaction = sqlx::Transaction<'static, Postgres>;
 
 pub async fn init_pg_conn_pool(env_config: &EnvConfig) -> Result<Pool<Postgres>, sqlx::Error> {
     let conn_options = PgConnectOptions::new()
