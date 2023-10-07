@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use axum::{extract::FromRequestParts, headers::UserAgent, TypedHeader};
+use axum::{extract::FromRequestParts, headers::UserAgent, RequestPartsExt, TypedHeader};
 use http::request::Parts;
 
 use crate::state::AppState;

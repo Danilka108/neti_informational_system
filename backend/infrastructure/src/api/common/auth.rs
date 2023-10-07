@@ -1,11 +1,12 @@
 use crate::state::AppState;
 
+use anyhow::Context;
 use app::token::ValidateAccessTokenError;
 use axum::extract::FromRequestParts;
 use domain::AuthClaims;
 use http::header::WWW_AUTHENTICATE;
 use http::request::Parts;
-use http::{header, HeaderMap, StatusCode};
+use http::{header, HeaderMap, HeaderValue, StatusCode};
 
 use super::api_error::ApiError;
 use super::role_checker::RoleChecker;
@@ -36,8 +37,8 @@ impl IntoApiError for AuthError {
             Self::MissingHeader => StatusCode::UNAUTHORIZED,
             Self::UnsupportedScheme => StatusCode::UNAUTHORIZED,
             Self::ValidateTokenError(_) => StatusCode::UNAUTHORIZED,
-            Self::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
-            Self::Forbidden => StatusCode::FORBIDDEN,
+            Self::NoRights => StatusCode::FORBIDDEN,
+            Self::Other(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -46,7 +47,7 @@ impl IntoApiError for AuthError {
 
         match self {
             Self::MissingHeader => {
-                headers.insert(WWW_AUTHENTICATE, "Bearer");
+                headers.insert(WWW_AUTHENTICATE, HeaderValue::from_str("Bearer").unwrap());
             }
             _ => (),
         }
@@ -68,20 +69,21 @@ impl<C: RoleChecker> FromRequestParts<AppState> for Auth<C> {
             .get(header::AUTHORIZATION)
             .ok_or(AuthError::MissingHeader)?
             .to_str()
-            .map_err(|_| AuthError::InternalError)?;
+            .context("failed to extract authorization header as str")?;
 
         if !auth_header.starts_with("Bearer ") {
-            return Err(AuthError::UnsupportedScheme);
+            return Err(AuthError::UnsupportedScheme.into());
         }
 
         let bearer_token = &auth_header[7..];
 
         let claims = app_state
             .token_service()
-            .validate_access_token(bearer_token)?;
+            .validate_access_token(bearer_token)
+            .map_err(AuthError::ValidateTokenError)?;
 
         if !C::can_access(claims.role) {
-            return Err(AuthError::Forbidden);
+            return Err(AuthError::NoRights.into());
         }
 
         Ok(Auth {

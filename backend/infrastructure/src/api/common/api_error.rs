@@ -5,7 +5,7 @@ use super::ResBody;
 
 const INTERNAL_ERROR_MSG: &str = "internal server error";
 
-pub trait IntoApiError: std::fmt::Display + Sized {
+pub trait IntoApiError: std::fmt::Debug + std::fmt::Display + Sized {
     fn status_code(&self) -> StatusCode;
 
     fn headers(&self) -> HeaderMap {
@@ -27,6 +27,7 @@ pub trait IntoApiError: std::fmt::Display + Sized {
 
         ApiError {
             status_code,
+            headers,
             body: ResBody {
                 message,
                 data: None,
