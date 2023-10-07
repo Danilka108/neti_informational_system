@@ -10,3 +10,4 @@ members = [
 async-trait = { version = "0.1.73" }
 anyhow = { version = "1.0.75" }
 domain = { path = "../domain" }
+thiserror = { version = "1.0.49" }
