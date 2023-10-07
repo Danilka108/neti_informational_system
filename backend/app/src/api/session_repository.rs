@@ -21,19 +21,19 @@ pub trait SessionRepository {
     ) -> Result<Option<Session>, anyhow::Error>;
 
     async fn insert(
-        &mut self,
+        &self,
         t: &mut Self::Transaction,
         session: Session,
     ) -> Result<Result<Session, EntityAlreadyExistError>, anyhow::Error>;
 
     async fn update(
-        &mut self,
+        &self,
         t: &mut Self::Transaction,
         session: Session,
     ) -> Result<Result<Session, EntityDoesNotExistError>, anyhow::Error>;
 
     async fn delete(
-        &mut self,
+        &self,
         t: &mut Self::Transaction,
         session: Session,
     ) -> Result<Result<Session, EntityDoesNotExistError>, anyhow::Error>;

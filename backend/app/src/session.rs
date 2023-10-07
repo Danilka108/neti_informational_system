@@ -1,9 +1,12 @@
-use crate::api::{EntityDoesNotExistError, SessionRepository};
+use crate::{
+    api::{EntityDoesNotExistError, SessionRepository},
+    dyn_dependency,
+};
 use anyhow::Context;
 use domain::{Seconds, SecondsFromUnixEpoch, Session};
 
 pub struct SessionService<T> {
-    repo: Box<dyn SessionRepository<Transaction = T>>,
+    repo: dyn_dependency!(SessionRepository<Transaction = T>),
     sessions_max_number: usize,
     session_ttl: Seconds,
 }
@@ -40,7 +43,7 @@ impl<T> SessionService<T> {
     pub fn new(
         sessions_max_number: usize,
         session_ttl: Seconds,
-        repo: Box<dyn SessionRepository<Transaction = T>>,
+        repo: dyn_dependency!(SessionRepository<Transaction = T>),
     ) -> Self {
         Self {
             repo,
@@ -49,15 +52,15 @@ impl<T> SessionService<T> {
         }
     }
 
-    pub async fn delete_session(
-        &mut self,
+    pub(super) async fn delete_session(
+        &self,
         tx: &mut T,
         session: Session,
     ) -> Result<Session, DeleteSessionError> {
         Ok(self.repo.delete(tx, session).await??)
     }
 
-    pub async fn validate_refresh_token(
+    pub(super) async fn validate_refresh_token(
         &self,
         tx: &mut T,
         user_id: i32,
@@ -79,8 +82,8 @@ impl<T> SessionService<T> {
         Ok(session)
     }
 
-    pub async fn save_session(
-        &mut self,
+    pub(super) async fn save_session(
+        &self,
         tx: &mut T,
         user_id: i32,
         metadata: String,

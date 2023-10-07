@@ -1,10 +1,10 @@
 use anyhow::Context;
-use domain::{Seconds, Session, User};
+use domain::{Session, User};
 use serde::{Deserialize, Serialize};
 
 use super::{
     session::{DeleteSessionError, SaveSessionError, SessionService, ValidateSessionError},
-    tokens::TokenService,
+    token::TokenService,
     user::{AuthenticateError, UserService},
 };
 
@@ -12,7 +12,6 @@ pub struct AuthService<T> {
     user_serive: UserService<T>,
     session_service: SessionService<T>,
     token_service: TokenService,
-    access_token_ttl: Seconds,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -68,18 +67,16 @@ impl<T> AuthService<T> {
         session_service: SessionService<T>,
         user_serive: UserService<T>,
         token_service: TokenService,
-        jwt_token_ttl: Seconds,
     ) -> Self {
         Self {
             session_service,
             user_serive,
             token_service,
-            access_token_ttl: jwt_token_ttl,
         }
     }
 
     pub async fn login(
-        &mut self,
+        &self,
         tx: &mut T,
         login: &str,
         password: &str,
@@ -92,7 +89,7 @@ impl<T> AuthService<T> {
     }
 
     pub async fn refresh_token(
-        &mut self,
+        &self,
         tx: &mut T,
         user_id: i32,
         refresh_token: &str,
@@ -111,7 +108,7 @@ impl<T> AuthService<T> {
     }
 
     pub async fn logout(
-        &mut self,
+        &self,
         tx: &mut T,
         user_id: i32,
         refresh_token: &str,
@@ -131,7 +128,7 @@ impl<T> AuthService<T> {
     }
 
     async fn new_session(
-        &mut self,
+        &self,
         tx: &mut T,
         user: &User,
         metadata: String,
@@ -148,7 +145,7 @@ impl<T> AuthService<T> {
 
         let access_token = self
             .token_service
-            .generate_access_token(&user, self.access_token_ttl)
+            .generate_access_token(&user)
             .context("failed to generate access token")?;
 
         Ok(TokensPair {

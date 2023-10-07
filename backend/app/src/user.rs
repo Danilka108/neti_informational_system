@@ -1,10 +1,13 @@
-use crate::api::{PasswordEncoder, UserRepository};
+use crate::{
+    api::{PasswordEncoder, UserRepository},
+    dyn_dependency,
+};
 use anyhow::Context;
 use domain::{Role, User};
 
 pub struct UserService<T> {
-    repository: Box<dyn UserRepository<Transaction = T>>,
-    password_encoder: Box<dyn PasswordEncoder>,
+    repository: dyn_dependency!(UserRepository<Transaction = T>),
+    password_encoder: dyn_dependency!(PasswordEncoder),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -25,8 +28,8 @@ pub enum AuthenticateError {
 
 impl<T> UserService<T> {
     pub fn new(
-        repository: Box<dyn UserRepository<Transaction = T>>,
-        password_encoder: Box<dyn PasswordEncoder>,
+        repository: dyn_dependency!(UserRepository<Transaction = T>),
+        password_encoder: dyn_dependency!(PasswordEncoder),
     ) -> Self {
         Self {
             repository,
@@ -46,7 +49,7 @@ impl<T> UserService<T> {
     }
 
     pub async fn create(
-        &mut self,
+        &self,
         tx: &mut T,
         login: String,
         role: Role,
@@ -81,8 +84,8 @@ impl<T> UserService<T> {
         Ok(user)
     }
 
-    pub async fn authenticate(
-        &mut self,
+    pub(super) async fn authenticate(
+        &self,
         tx: &mut T,
         login: &str,
         password: &str,

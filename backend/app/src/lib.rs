@@ -1,4 +1,7 @@
-// #![feature(async_fn_in_trait)]
-
 pub mod api;
-pub mod services;
+pub mod auth;
+pub mod session;
+pub mod token;
+pub mod user;
+
+mod macros;

@@ -8,15 +8,15 @@ pub trait UserRepository {
     type Transaction;
 
     async fn insert(
-        &mut self,
+        &self,
         t: &mut Self::Transaction,
         user: domain::User<()>,
     ) -> Result<Result<User, EntityAlreadyExistError>, anyhow::Error>;
 
     async fn update(
-        &mut self,
+        &self,
         t: &mut Self::Transaction,
-        user: domain::User<()>,
+        user: domain::User,
     ) -> Result<Result<User, EntityDoesNotExistError>, anyhow::Error>;
 
     async fn find_by_email(
