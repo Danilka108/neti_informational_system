@@ -8,4 +8,4 @@ serde = { version = "1.0.188", features = ["derive"] }
 thiserror.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
-domain.workspace = true
+di = { path = "../di" }

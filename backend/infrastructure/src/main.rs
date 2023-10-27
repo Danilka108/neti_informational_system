@@ -1,13 +1,12 @@
-use std::sync::Arc;
-
 use state::AppState;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
-mod api;
+mod config;
 mod env_config;
+mod handlers;
 mod pg;
-mod security;
 mod state;
+mod utils;
 
 #[tokio::main]
 async fn main() {
@@ -33,7 +32,7 @@ async fn main() {
         }
     };
 
-    let app_state = match AppState::new(env_config).await {
+    let app_state = match AppState::try_from_config(env_config).await {
         Ok(val) => val,
         Err(cause) => {
             tracing::error!(%cause, "failed to boot server");
@@ -41,7 +40,7 @@ async fn main() {
         }
     };
 
-    let app = api::api().with_state(Arc::new(app_state));
+    let app = handlers::router(app_state);
 
     axum::Server::bind(&"127.0.0.1:3000".parse().unwrap())
         .serve(app.into_make_service())

@@ -1,495 +1,358 @@
 DROP SCHEMA IF EXISTS public CASCADE;
 CREATE SCHEMA public;
 
-CREATE TYPE role AS ENUM ('ADMIN');
+CREATE TABLE persons
+(
+    id serial
+        PRIMARY KEY
+);
+
+CREATE TABLE scientific_councils
+(
+    id serial NOT NULL
+        PRIMARY KEY,
+    head_id serial NOT NULL REFERENCES persons
+);
+
+CREATE TABLE scientific_council_employees
+(
+    employee_id serial
+        PRIMARY KEY
+        REFERENCES persons ON DELETE CASCADE,
+    scientific_council_id serial NOT NULL
+        REFERENCES scientific_councils ON DELETE RESTRICT,
+    role varchar(200) NOT NULL,
+);
+
+CREATE TABLE deans_offices
+(
+    id serial
+        PRIMARY KEY,
+    dean_id serial NOT NULL
+        REFERENCES persons ON DELETE RESTRICT,
+    vise_dean_id serial NOT NULL
+        REFERENCES persons ON DELETE RESTRICT
+);
+
+CREATE TABLE deans_office_employees
+(
+    employee_id serial
+        PRIMARY KEY
+        REFERENCES persons ON DELETE CASCADE,
+    deans_office serial NOT NULL
+        REFERENCES deans_offices ON DELETE RESTRICT,
+    field_of_activity text NOT NULL
+);
+
+CREATE TABLE rectorates
+(
+    id serial
+        PRIMARY KEY,
+    rector_id serial NOT NULL
+        REFERENCES persons ON DELETE RESTRICT
+);
+
+CREATE TABLE rectorate_employees
+(
+    employee_id serial
+        PRIMARY KEY
+        REFERENCES persons ON DELETE CASCADE,
+    rectorate_id serial NOT NULL
+        REFERENCES rectorates ON DELETE RESTRICT,
+    role varchar(255) NOT NULL,
+    field_of_activity text NOT NULL
+);
+
+CREATE TABLE universities
+(
+    id serial
+        PRIMARY KEY,
+    name varchar(100)
+        UNIQUE,
+    scientific_council_id serial NOT NULL
+        REFERENCES scientific_councils ON DELETE RESTRICT,
+    rectorate_id serial NOT NULL
+        REFERENCES rectorates ON DELETE RESTRICT
+);
+
+CREATE TYPE faculty_kind AS enum ('faculty', 'institute');
+
+CREATE TABLE faculties
+(
+    id serial
+        PRIMARY KEY,
+    name varchar(100) NOT NULL,
+    university_id serial NOT NULL
+        REFERENCES universities ON DELETE RESTRICT,
+--         UNIQUE (name, university_id),
+    kind faculty_kind NOT NULL,
+    deans_office_id serial NOT NULL
+        REFERENCES deans_offices ON DELETE RESTRICT,
+    scientific_council_id serial NOT NULL
+        REFERENCES scientific_councils ON DELETE RESTRICT
+);
+
+CREATE TYPE department_kind AS enum ('chair', 'department');
+
+CREATE TABLE departments
+(
+    id serial
+        PRIMARY KEY,
+    name varchar(100) NOT NULL,
+    faculty_id serial NOT NULL
+        REFERENCES faculties ON DELETE RESTRICT,
+--         UNIQUE (name, university_id)
+    kind department_kind NOT NULL,
+    head_id serial NOT NULL
+        REFERENCES persons ON DELETE RESTRICT
+);
+
+CREATE TYPE teacher_kind AS enum ('assistant', 'regular_teacher', 'senior_teacher', 'associate_professor', 'professor');
+
+CREATE TABLE teachers
+(
+    id serial
+        PRIMARY KEY
+        REFERENCES persons,
+    kind teacher_kind NOT NULL,
+    department_id serial NOT NULL
+        REFERENCES departments
+);
+
+CREATE TYPE qualification AS enum ('bachelor', 'master', 'postgraduate', 'doctorate');
+
+CREATE TABLE students
+(
+    id serial
+        PRIMARY KEY
+        REFERENCES persons ON DELETE CASCADE,
+    studying_qualification qualification,
+    departament_id serial NOT NULL REFERENCES departments
+);
+
+CREATE TYPE training_kind AS enum ('FULL_TIME', 'CORRESPONDENCE');
+
+CREATE TABLE IF NOT EXISTS curriculums
+(
+    id serial
+    PRIMARY KEY,
+    training_kind training_kind NOT NULL,
+    training_time_in_years float NOT NULL
+    CHECK (training_time_in_years > 0),
+    qualification qualification NOT NULL
+    );
+
+CREATE TABLE IF NOT EXISTS subjects
+(
+    id serial
+      PRIMARY KEY,
+    name varchar(100) NOT NULL,
+    teaching_department_id serial NOT NULL
+      REFERENCES departments ON DELETE RESTRICT
+    );
+
+CREATE TABLE IF NOT EXISTS curriculum_items
+(
+    id serial
+      PRIMARY KEY,
+    curriculum_id serial NOT NULL
+      REFERENCES curriculums ON DELETE CASCADE,
+    subject_id serial NOT NULL
+      REFERENCES subjects ON DELETE RESTRICT,
+    semester integer NOT NULL
+      CHECK (semester > 0),
+    course integer NOT NULL
+      CHECK (course > 0)
+    );
+
+CREATE TYPE attestation_kind AS enum ('TEST', 'DIFF_TEST', 'EXAM');
+CREATE TYPE five_point_rating AS enum ('0', '1', '2', '3', '4', '5', 'passed');
+CREATE TYPE ects_rating AS enum ('A', 'B', 'C', 'D', 'E', 'FX');
+
+CREATE TABLE attestations
+(
+    curriculum_item_id serial
+        PRIMARY KEY
+        REFERENCES curriculum_items ON DELETE RESTRICT,
+    kind attestation_kind NOT NULL,
+    duration_in_hours float NOT NULL
+        CHECK (duration_in_hours > 0)
+);
+
+CREATE TABLE attestations_examiners
+(
+    examiners_id serial NOT NULL
+        REFERENCES teachers ON DELETE RESTRICT,
+    attestation_id serial NOT NULL
+        REFERENCES attestations ON DELETE CASCADE,
+
+    PRIMARY KEY (examiners_id, attestation_id)
+);
+
+CREATE TABLE students_attestations
+(
+    student_id serial NOT NULL
+        REFERENCES students ON DELETE CASCADE,
+    attestation_id serial NOT NULL
+        REFERENCES attestations ON DELETE RESTRICT,
+    score integer NOT NULL
+        CONSTRAINT students_attestations_score_check
+            CHECK (score > 0),
+    five_point_rating five_point_rating NOT NULL,
+    ects_rating ects_rating NOT NULL,
+    rating_contributor_id serial
+        REFERENCES deans_office_employees ON DELETE RESTRICT,
+
+    PRIMARY KEY (student_id, attestation_id)
+);
+
+CREATE TYPE class_kind AS enum ('LECTURE', 'SEMINAR_OR_PRACTISE', 'LAB_WORK', 'CONSULTATION', 'COURSE_WORK', 'COURSE_PROJECT', 'CALCULATION_AND_GRAPHICALLY_TASK_OR_ESSAY', 'VALIDATION_WORK');
+
+CREATE TABLE IF NOT EXISTS classes
+(
+    id serial
+    PRIMARY KEY,
+    curriculum_item_id serial NOT NULL
+    REFERENCES curriculum_items ON DELETE CASCADE,
+    kind class_kind NOT NULL,
+    duration_in_hours float NOT NULL
+    CHECK (duration_in_hours > 0)
+    );
+
+CREATE TABLE IF NOT EXISTS teachers_classes
+(
+    teacher_id serial NOT NULL
+    REFERENCES teachers ON DELETE RESTRICT,
+    class_id serial NOT NULL
+    REFERENCES classes ON DELETE CASCADE,
+
+    PRIMARY KEY (class_id, teacher_id)
+    );
+
+CREATE TABLE study_groups
+(
+    id serial
+        PRIMARY KEY,
+    name varchar(100) NOT NULL,
+    department_id serial NOT NULL
+        REFERENCES departments ON DELETE RESTRICT,
+    curriculum_id serial NOT NULL REFERENCES curriculums
+);
+
+CREATE TABLE study_group_students
+(
+    students serial NOT NULL
+        REFERENCES students ON DELETE CASCADE,
+    study_group serial NOT NULL
+        REFERENCES study_groups ON DELETE RESTRICT,
+    PRIMARY KEY (students, study_group)
+);
+
+CREATE TABLE qualification_works
+(
+    id serial
+        PRIMARY KEY,
+    title varchar(255) NOT NULL
+        UNIQUE,
+    author_id serial NOT NULL
+        REFERENCES persons,
+    qualification qualification NOT NULL
+);
+
+CREATE TABLE scientific_directions
+(
+    id serial
+        PRIMARY KEY,
+    name varchar(100) NOT NULL,
+    head_id serial
+        UNIQUE
+        REFERENCES teachers ON DELETE RESTRICT
+);
+
+CREATE TABLE students_scientific_directions
+(
+    student_id serial NOT NULL
+        REFERENCES students ON DELETE CASCADE,
+    scientific_direction_id serial NOT NULL
+        REFERENCES scientific_directions ON DELETE RESTRICT,
+
+    PRIMARY KEY (student_id, scientific_direction_id)
+);
+
+CREATE TABLE teachers_scientific_directions
+(
+    teacher_id serial NOT NULL
+        REFERENCES teachers ON DELETE CASCADE,
+    scientific_direction_id serial NOT NULL
+        REFERENCES scientific_directions ON DELETE RESTRICT,
+
+    PRIMARY KEY (teacher_id, scientific_direction_id)
+);
+
+CREATE TABLE scientific_themes
+(
+    id serial PRIMARY KEY,
+    name varchar(100) NOT NULL,
+    head_id serial
+        UNIQUE REFERENCES teachers ON DELETE SET NULL,
+    scientific_direction_id serial NOT NULL
+        REFERENCES scientific_directions ON DELETE RESTRICT
+);
+
+CREATE TABLE students_scientific_themes
+(
+    student_id serial NOT NULL
+        REFERENCES students ON DELETE CASCADE,
+    scientific_theme_id serial NOT NULL
+        REFERENCES scientific_themes ON DELETE RESTRICT,
+
+    PRIMARY KEY (student_id, scientific_theme_id)
+);
+
+CREATE TABLE teachers_scientific_themes
+(
+    teacher_id serial NOT NULL
+        REFERENCES teachers ON DELETE CASCADE,
+    scientific_theme_id serial NOT NULL
+        REFERENCES scientific_themes ON DELETE RESTRICT,
+
+    PRIMARY KEY (teacher_id, scientific_theme_id)
+);
+
+CREATE TABLE laboratories
+(
+    id serial
+        PRIMARY KEY,
+    faculty_id serial NOT NULL
+        REFERENCES faculties ON DELETE RESTRICT,
+    name varchar(100) NOT NULL,
+    head_id serial NOT NULL
+        REFERENCES teachers
+);
+
+CREATE TYPE user_role AS ENUM ('ADMIN');
 
 CREATE TABLE users
 (
-  id serial NOT NULL PRIMARY KEY,
-  email varchar(255) NOT NULL UNIQUE,
-  role role NOT NULL,
-  password bytea NOT NULL
+    id serial NOT NULL
+        PRIMARY KEY,
+    person_id serial NOT NULL UNIQUE REFERENCES persons ON DELETE CASCADE,
+    email varchar(255) NOT NULL
+        UNIQUE,
+    role user_role NOT NULL,
+    hashed_password text NOT NULL
 );
 
-CREATE TABLE sessions
+CREATE TABLE user_sessions
 (
-  user_id serial NOT NULL
-    REFERENCES users
-    ON DELETE CASCADE,
-  metadata varchar(512) NOT NULL,
-  refresh_token varchar(1024) NOT NULL UNIQUE,
-  expires_at_in_seconds bigint NOT NULL CHECK (expires_at_in_seconds > 0),
+    user_id serial NOT NULL
+        REFERENCES users ON DELETE CASCADE,
+    metadata varchar(512) NOT NULL,
 
-  PRIMARY KEY (user_id, metadata)
+    refresh_token varchar(1024) NOT NULL
+        UNIQUE,
+    expires_at_in_seconds bigint NOT NULL
+        CHECK (expires_at_in_seconds > 0),
+
+    PRIMARY KEY (user_id, metadata)
 );
-
--- CREATE DOMAIN years AS integer CONSTRAINT years_check
---     CHECK (value > 0);
---
--- ALTER DOMAIN years OWNER TO admin;
---
--- CREATE DOMAIN hours AS integer CONSTRAINT hours_check
---     CHECK (value > 0);
---
--- ALTER DOMAIN hours OWNER TO admin;
---
--- CREATE TYPE gender AS enum ('MALE', 'FEMALE');
---
--- ALTER TYPE gender OWNER TO admin;
---
--- CREATE TYPE teacher_kind AS enum ('ASSISTANT', 'REGULAR_TEACHER', 'SENIOR_TEACHER', 'ASSOCIATE_PROFESSOR', 'PROFESSOR');
---
--- ALTER TYPE teacher_kind OWNER TO admin;
---
--- CREATE TYPE qualification AS enum ('BACHELOR', 'MASTER');
---
--- ALTER TYPE qualification OWNER TO admin;
---
--- CREATE TYPE scientific_degree_kind AS enum ('ASSOCIATE_PROFESSOR', 'PROFESSOR');
---
--- ALTER TYPE scientific_degree_kind OWNER TO admin;
---
--- CREATE TYPE training_kind AS enum ('FULL_TIME', 'CORRESPONDENCE');
---
--- ALTER TYPE training_kind OWNER TO admin;
---
--- CREATE TYPE attestation_kind AS enum ('TEST', 'DIFF_TEST', 'EXAM');
---
--- ALTER TYPE attestation_kind OWNER TO admin;
---
--- CREATE TYPE five_point_rating AS enum ('0', '1', '2', '3', '4', '5', 'passed');
---
--- ALTER TYPE five_point_rating OWNER TO admin;
---
--- CREATE TYPE ects_rating AS enum ('A', 'B', 'C', 'D', 'E', 'FX');
---
--- ALTER TYPE ects_rating OWNER TO admin;
---
--- CREATE TYPE class_kind AS enum ('LECTURE', 'SEMINAR_OR_PRACTISE', 'LAB_WORK', 'CONSULTATION', 'COURSE_WORK', 'COURSE_PROJECT', 'CALCULATION_AND_GRAPHICALLY_TASK_OR_ESSAY', 'VALIDATION_WORK');
---
--- ALTER TYPE class_kind OWNER TO admin;
---
--- CREATE TYPE role AS enum ('ADMIN', 'UNIVERSITY_EDITOR', 'FACULTY_EDITOR', 'VIEWER', 'UNIVERSITY_VIEWER');
---
--- CREATE TABLE IF NOT EXISTS rector_departments
---     (
---         id serial
---             PRIMARY KEY,
---         rector_id serial NOT NULL
---             UNIQUE,
---         vice_rector_id serial NOT NULL
---             UNIQUE
---     );
---
--- ALTER TABLE rector_departments OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS universities
---     (
---         name varchar(100)
---             PRIMARY KEY,
---         short_name varchar(10) NOT NULL
---             UNIQUE,
---         rector_department_id serial NOT NULL
---             UNIQUE
---             REFERENCES rector_departments
---                 ON DELETE RESTRICT
---     );
---
--- ALTER TABLE universities OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS persons
---     (
---         id serial
---             PRIMARY KEY,
---         university_name varchar(100)
---             REFERENCES universities (name)
---                 ON DELETE RESTRICT
---     );
---
--- ALTER TABLE persons
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS users
---     (
---         id serial
---             PRIMARY KEY,
---         person_id serial NOT NULL
---             UNIQUE
---             REFERENCES persons
---             ON DELETE CASCADE,
---         password varchar(100) NOT NULL,
---         login varchar(100) NOT NULL,
---         role role NOT NULL
---     );
---
--- ALTER TABLE users OWNER TO admin;
---
--- ALTER TABLE rector_departments ADD CONSTRAINT rector_department_rector_id_fk
---     FOREIGN KEY (rector_id)
---         REFERENCES persons (id)
---         ON DELETE RESTRICT;
---
--- ALTER TABLE rector_departments ADD CONSTRAINT rector_department_vice_rector_id_fk
---     FOREIGN KEY (vice_rector_id)
---         REFERENCES persons (id)
---         ON DELETE RESTRICT;
---
--- CREATE TABLE IF NOT EXISTS rector_department_employees
---     (
---         id serial
---             PRIMARY KEY
---             REFERENCES persons
---                 ON DELETE CASCADE,
---         rector_department_id serial NOT NULL
---             REFERENCES rector_departments
---                 ON DELETE RESTRICT,
---         post varchar(100) NOT NULL
---     );
---
--- CREATE TABLE IF NOT EXISTS passport_details
---     (
---         id serial
---             PRIMARY KEY,
---         person_id serial
---             REFERENCES persons
---                 ON DELETE CASCADE,
---         first_name varchar(100) NOT NULL,
---         last_name varchar(100) NOT NULL,
---         middle_name varchar(100) NOT NULL,
---         birth_date timestamp WITH TIME ZONE NOT NULL,
---         birth_place varchar(255) NOT NULL,
---         gender gender NOT NULL,
---         subdivision_code integer NOT NULL
---             CONSTRAINT passport_details_subdivision_code_check
---                 CHECK ((subdivision_code >= 100000) AND (subdivision_code <= 999999)),
---         issuer varchar(255) NOT NULL,
---         series integer NOT NULL
---             CONSTRAINT passport_details_series_check
---                 CHECK ((series >= 1000) AND (series <= 9999)),
---         number integer NOT NULL
---             CONSTRAINT passport_details_number_check
---                 CHECK ((number >= 100000) AND (number <= 999999)),
---         point_of_residence varchar(255) NOT NULL,
---         region varchar(255) NOT NULL,
---         street varchar(255) NOT NULL,
---         house varchar(255) NOT NULL
---     );
---
--- ALTER TABLE passport_details
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS dean_departments
---     (
---         id serial
---             PRIMARY KEY,
---         dean_id serial NOT NULL
---             UNIQUE
---             REFERENCES persons
---                 ON DELETE RESTRICT,
---         vice_dean_id serial NOT NULL
---             UNIQUE
---             REFERENCES persons
---                 ON DELETE RESTRICT
---     );
---
--- ALTER TABLE dean_departments
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS faculty_departments
---     (
---         id serial
---             PRIMARY KEY,
---         name varchar(100) NOT NULL,
---         -- faculty_id serial NOT NULL
---         --     REFERENCES faculties
---         --         ON DELETE RESTRICT,
---         head_id serial NOT NULL
---             REFERENCES persons
---                 ON DELETE RESTRICT
---     );
---
--- ALTER TABLE faculty_departments
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS faculties
---     (
---         id serial
---             PRIMARY KEY,
---         name varchar(100) NOT NULL,
---         short_name varchar(10) NOT NULL
---             UNIQUE,
---         faculty_department_id serial NOT NULL
---             REFERENCES faculty_departments
---                 ON DELETE RESTRICT,
---         university_name varchar(100) NOT NULL
---             REFERENCES universities (name)
---                 ON DELETE CASCADE
---     );
---
--- ALTER TABLE faculties
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS dean_department_employee
---     (
---         id serial
---             PRIMARY KEY
---             REFERENCES persons
---                 ON DELETE CASCADE,
---         dean_department_id serial NOT NULL
---             REFERENCES dean_departments
---                 ON DELETE RESTRICT
---     );
---
--- ALTER TABLE dean_department_employee
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS teachers
---     (
---         id serial
---             PRIMARY KEY
---             REFERENCES persons
---                 ON DELETE CASCADE,
---         kind teacher_kind NOT NULL,
---         faculty_department_id serial NOT NULL
---             REFERENCES faculty_departments
---                 ON DELETE RESTRICT
---     );
---
--- ALTER TABLE teachers
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS dissertations
---     (
---         id serial
---             PRIMARY KEY,
---         title varchar(255) NOT NULL,
---         author_id serial NOT NULL
---             UNIQUE
---             REFERENCES persons
---                 ON DELETE CASCADE
---     );
---
--- ALTER TABLE dissertations
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS degrees
---     (
---         id serial
---             PRIMARY KEY,
---         dissertation_id serial NOT NULL
---             UNIQUE
---             REFERENCES dissertations
---                 ON DELETE RESTRICT,
---         person_id serial NOT NULL
---             UNIQUE
---             REFERENCES persons
---                 ON DELETE CASCADE,
---         kind scientific_degree_kind NOT NULL
---     );
---
--- ALTER TABLE degrees
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS postgraduate_students
---     (
---         id serial
---             PRIMARY KEY
---             REFERENCES persons
---                 ON DELETE CASCADE,
---         faculty_department_id serial NOT NULL
---             REFERENCES faculty_departments
---                 ON DELETE RESTRICT,
---         scientific_supervisor_id serial REFERENCES teachers ON DELETE SET NULL
---     );
---
--- ALTER TABLE postgraduate_students
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS scientific_directions
---     (
---         id serial
---             PRIMARY KEY,
---         name varchar(100) NOT NULL,
---         head_id serial
---             UNIQUE REFERENCES teachers ON DELETE SET NULL
---     );
---
--- ALTER TABLE scientific_directions
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS scientific_themes
---     (
---         id serial NOT NULL,
---         name varchar(100) NOT NULL,
---         head_id serial
---             UNIQUE REFERENCES teachers ON DELETE SET NULL,
---         scientific_direction_id serial NOT NULL
---             REFERENCES scientific_directions
---                 ON DELETE RESTRICT
---     );
---
--- ALTER TABLE scientific_themes
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS curriculums
---     (
---         id serial
---             PRIMARY KEY,
---         faculty_department_id serial NOT NULL
---             REFERENCES faculty_departments
---                 ON DELETE RESTRICT,
---         training_kind training_kind NOT NULL,
---         training_time years NOT NULL,
---         qualification qualification NOT NULL
---     );
---
--- ALTER TABLE curriculums
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS subjects
---     (
---         id serial
---             PRIMARY KEY,
---         name varchar(100) NOT NULL,
---         faculty_department_id serial NOT NULL
---             REFERENCES faculty_departments
---                 ON DELETE RESTRICT
---     );
---
--- ALTER TABLE subjects
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS curriculum_items
---     (
---         id serial
---             PRIMARY KEY,
---         curriculum_id serial NOT NULL
---             REFERENCES curriculums
---                 ON DELETE CASCADE,
---         subject_id serial NOT NULL
---             REFERENCES subjects
---                 ON DELETE RESTRICT,
---         semester integer NOT NULL
---             CONSTRAINT subjects_semester_check
---                 CHECK (semester > 0),
---         course integer NOT NULL
---             CONSTRAINT subjects_course_check
---                 CHECK (course > 0)
---     );
---
--- ALTER TABLE curriculum_items
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS attestations
---     (
---         id serial
---             PRIMARY KEY,
---         curriculum_item_id serial
---             REFERENCES curriculum_items
---                 ON DELETE RESTRICT,
---         kind attestation_kind NOT NULL,
---         duration hours NOT NULL,
---         examiner_id serial REFERENCES teachers ON DELETE SET NULL
---     );
---
--- ALTER TABLE attestations
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS classes
---     (
---         id serial
---             PRIMARY KEY,
---         curriculum_item_id serial NOT NULL
---             REFERENCES curriculum_items
---                 ON DELETE CASCADE,
---         kind class_kind NOT NULL,
---         duration hours NOT NULL
---     );
---
--- ALTER TABLE classes
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS classes_teachers
---     (
---         class_id serial NOT NULL
---             REFERENCES classes
---                 ON DELETE CASCADE,
---         teacher_id serial NOT NULL
---             REFERENCES teachers
---                 ON DELETE RESTRICT,
---         PRIMARY KEY (class_id, teacher_id)
---     );
---
--- ALTER TABLE classes_teachers
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS groups
---     (
---         id serial
---             PRIMARY KEY,
---         name varchar(100) NOT NULL,
---         qualification qualification NOT NULL,
---         department_id serial NOT NULL
---             REFERENCES faculty_departments
---                 ON DELETE RESTRICT,
---         curriculum_id serial NOT NULL
---             REFERENCES curriculums
---                 ON DELETE RESTRICT
---     );
---
--- ALTER TABLE groups
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS students
---     (
---         id serial
---             PRIMARY KEY
---             REFERENCES persons
---                 ON DELETE CASCADE,
---         group_id serial NOT NULL
---             CONSTRAINT students_group_name_fk
---                 REFERENCES groups
---                 ON DELETE RESTRICT
---     );
---
--- ALTER TABLE students
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS graduate_work
---     (
---         title varchar(255) NOT NULL
---             PRIMARY KEY,
---         author_id serial NOT NULL
---             UNIQUE
---             REFERENCES students
---                 ON DELETE CASCADE
---     );
---
--- ALTER TABLE graduate_work
---     OWNER TO admin;
---
--- CREATE TABLE IF NOT EXISTS students_attestations
---     (
---         student_id serial NOT NULL
---             REFERENCES students
---                 ON DELETE CASCADE,
---         attestation_id serial NOT NULL
---             REFERENCES attestations
---                 ON DELETE RESTRICT,
---         score integer NOT NULL
---             CONSTRAINT students_attestations_score_check
---                 CHECK (score > 0),
---         five_point_rating five_point_rating NOT NULL,
---         ects_rating ects_rating NOT NULL,
---         rating_contributor_id serial REFERENCES dean_department_employee ON DELETE SET NULL,
---
---         PRIMARY KEY (student_id, attestation_id)
---     );
---
--- ALTER TABLE students_attestations
---     OWNER TO admin;
-
---  TODO: assistants, regular teachers and senior teachers may be postgraduate students
---  TODO: assistants and professor must have corresponding degree
--- TODO: maybe head should be associate professor or professor,
---  or maybe head should have scientific degree?

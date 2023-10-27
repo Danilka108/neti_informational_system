@@ -1,19 +1,17 @@
 use std::sync::Arc;
 
-use app::api::{PasswordEncoder, SessionRepository, TokenManager, UserRepository};
-use app::auth::AuthService;
-use app::dyn_dependency;
-use app::session::SessionService;
-use app::token::TokenService;
-use app::user::UserService;
+use adapters::{AdaptersModule, PgTransaction};
+use app::AppModule;
+use tokio::sync::Mutex;
 
+use crate::config::ConfigContainer;
 use crate::env_config::EnvConfig;
-use crate::pg::{init_pg_conn_pool, PgSessionRepository, PgTransaction, PgUserRepository};
-use crate::security::password_encoder::Pbkdf2PassEncoder;
-use crate::security::token_manager::TokenManagerImpl;
 
+use crate::pg::init_pg_conn_pool;
+
+#[derive(Debug, Clone)]
 pub struct AppState {
-    env_config: EnvConfig,
+    config_container: ConfigContainer,
     pg_pool: sqlx::Pool<sqlx::Postgres>,
 }
 
@@ -24,70 +22,36 @@ pub enum AppStateError {
 }
 
 impl AppState {
-    pub async fn new(env_config: EnvConfig) -> Result<Self, AppStateError> {
+    pub async fn try_from_config(env_config: EnvConfig) -> Result<Self, AppStateError> {
         let pg_pool = init_pg_conn_pool(&env_config).await?;
-
-        // let token_manager = Arc::new();
-        //
-        // let user_repository = Arc::new(PgUserRepository);
-        // let session_repository = Arc::new();
+        let config_container = ConfigContainer::from(&env_config);
 
         Ok(Self {
-            env_config,
+            config_container,
             pg_pool,
         })
     }
 
-    pub fn pg_pool(&self) -> &sqlx::Pool<sqlx::Postgres> {
-        &self.pg_pool
-    }
-
-    pub fn env_config(&self) -> &EnvConfig {
-        &self.env_config
-    }
-
-    pub fn password_encoder(&self) -> dyn_dependency!(PasswordEncoder) {
-        Box::new(Pbkdf2PassEncoder::new(self.env_config()))
-    }
-
-    pub fn token_manager(&self) -> dyn_dependency!(TokenManager) {
-        Box::new(TokenManagerImpl::new(self.env_config()))
-    }
-
-    pub fn session_repository(
+    pub async fn begin(
         &self,
-    ) -> dyn_dependency!(SessionRepository<Transaction = PgTransaction>) {
-        Box::new(PgSessionRepository)
-    }
+    ) -> Result<
+        (
+            AppModule<AdaptersModule<ConfigContainer>>,
+            Arc<Mutex<PgTransaction>>,
+        ),
+        sqlx::Error,
+    > {
+        let txn = Arc::new(Mutex::new(self.pg_pool.begin().await?));
 
-    pub fn user_repository(&self) -> dyn_dependency!(UserRepository<Transaction = PgTransaction>) {
-        Box::new(PgUserRepository)
-    }
+        let adapters_container = AdaptersModule {
+            config: self.config_container.clone(),
+            txn: Arc::clone(&txn),
+        };
 
-    pub fn token_service(&self) -> TokenService {
-        TokenService::new(
-            self.env_config.jwt_token_ttl_in_seconds.into(),
-            self.token_manager(),
-        )
-    }
+        let app_container = AppModule {
+            adapters: adapters_container,
+        };
 
-    pub fn session_service(&self) -> SessionService<PgTransaction> {
-        SessionService::new(
-            self.env_config.sessions_max_number_per_user,
-            self.env_config.session_ttl_in_seconds.into(),
-            self.session_repository(),
-        )
-    }
-
-    pub fn user_service(&self) -> UserService<PgTransaction> {
-        UserService::new(self.user_repository(), self.password_encoder())
-    }
-
-    pub fn auth_service(&self) -> AuthService<PgTransaction> {
-        AuthService::new(
-            self.session_service(),
-            self.user_service(),
-            self.token_service(),
-        )
+        Ok((app_container, txn))
     }
 }

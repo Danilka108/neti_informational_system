@@ -2,8 +2,11 @@
 resolver = "2"
 
 members = [
-  "app",
-  "infrastructure",
+    "app",
+    "adapters",
+    "infrastructure",
+    # "di_macro",
+    "di",
 ]
 
 [workspace.dependencies]

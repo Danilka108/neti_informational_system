@@ -7,9 +7,9 @@ edition = "2021"
 thiserror.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
-domain.workspace = true
+di = { path = "../di/" }
+adapters = { path = "../adapters/" }
 app = { path = "../app" }
-ring = { version = "0.16.20" }
 tokio = { version = "1.32.0", features = ["full"] }
 http = { version = "0.2.9" }
 tower = { version = "0.4.13" }
@@ -27,3 +27,6 @@ envy = { version = "0.4.2" }
 jsonwebtoken = { version = "8.3.0" }
 sqlx = { version = "0.7.1", features = ["postgres", "runtime-tokio", "macros"] }
 nanoid = { version = "0.4.0" }
+argon2 = { version = "0.5.2", features = ["std", "alloc", "password-hash"] }
+password-hash = { version = "0.5.0" }
+rand = { version = "0.8.5", features = ["std_rng"] }
