@@ -1,8 +1,10 @@
+#![feature(iterator_try_collect)]
+
 use state::AppState;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
+mod adapters;
 mod config;
-mod env_config;
 mod handlers;
 mod pg;
 mod state;
@@ -24,7 +26,7 @@ async fn main() {
         )
         .init();
 
-    let env_config = match env_config::EnvConfig::try_load() {
+    let env_config = match config::env_config::EnvConfig::try_load() {
         Ok(val) => val,
         Err(cause) => {
             tracing::error!(%cause, "failed to boot server");

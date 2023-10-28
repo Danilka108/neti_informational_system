@@ -6,7 +6,7 @@ use app::user::{HashedPassword, Role, User};
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 
-use crate::PgTransaction;
+use crate::pg::PgTransaction;
 
 pub struct PgUserRepository {
     pub(crate) txn: Arc<Mutex<PgTransaction>>,

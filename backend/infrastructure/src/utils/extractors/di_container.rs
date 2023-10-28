@@ -1,8 +1,8 @@
-use adapters::AdaptersModule;
 use app::AppModule;
 use axum::extract::FromRequestParts;
 use http::{request::Parts, StatusCode};
 
+use crate::adapters::AdaptersModule;
 use crate::config::ConfigContainer;
 
 use crate::utils::CommonState;
@@ -25,7 +25,7 @@ impl IntoApiError for ExtractDiContainerError {
 impl<S: CommonState> FromRequestParts<S> for DiContainer {
     type Rejection = ApiError;
 
-    #[tracing::instrument]
+    #[tracing::instrument(name = "Build di container", skip(parts, _state))]
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         let Some(di_contaner) = parts.extensions.get::<DiContainer>().cloned() else {
             tracing::error!("failed to get DiContainer extension");

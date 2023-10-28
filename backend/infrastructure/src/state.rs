@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
-use adapters::{AdaptersModule, PgTransaction};
+use crate::adapters::AdaptersModule;
+use crate::config::env_config::EnvConfig;
+use crate::pg::PgTransaction;
 use app::AppModule;
 use tokio::sync::Mutex;
 
 use crate::config::ConfigContainer;
-use crate::env_config::EnvConfig;
 
 use crate::pg::init_pg_conn_pool;
 

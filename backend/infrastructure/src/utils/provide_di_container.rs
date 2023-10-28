@@ -7,8 +7,8 @@ use crate::state::AppState;
 
 use super::extractors::DiContainer;
 
-#[tracing::instrument]
-pub async fn provide_di_container<B: std::fmt::Debug>(
+#[tracing::instrument(name = "Provide di container", skip(request, next))]
+pub async fn provide_di_container<B>(
     State(app_state): State<AppState>,
     mut request: Request<B>,
     next: Next<B>,

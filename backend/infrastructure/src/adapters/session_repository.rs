@@ -6,7 +6,7 @@ use app::session::Session;
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 
-use crate::PgTransaction;
+use crate::pg::PgTransaction;
 
 pub struct PgSessionRepository {
     pub(crate) txn: Arc<Mutex<PgTransaction>>,

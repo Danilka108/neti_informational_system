@@ -1,8 +1,11 @@
-use crate::env_config::EnvConfig;
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
     ConnectOptions, Pool, Postgres,
 };
+
+use crate::config::env_config::EnvConfig;
+
+pub type PgTransaction = sqlx::Transaction<'static, Postgres>;
 
 pub async fn init_pg_conn_pool(env_config: &EnvConfig) -> Result<Pool<Postgres>, sqlx::Error> {
     let conn_options = PgConnectOptions::new()

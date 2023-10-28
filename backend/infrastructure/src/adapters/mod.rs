@@ -1,6 +1,3 @@
-#![feature(trait_alias)]
-#![feature(iterator_try_collect)]
-
 mod access_token_engine;
 pub mod config;
 mod password_hasher;
@@ -11,6 +8,7 @@ mod user_repository;
 
 use std::sync::Arc;
 
+use crate::pg::PgTransaction;
 use access_token_engine::{JwtAccessTokenEngine, JwtKeys};
 use app::{
     ports::DynPersonRepository,
@@ -23,11 +21,8 @@ use password_hasher::{Argon2Params, Argon2PasswordHasher};
 use person_repository::PgPersonRepository;
 use refresh_token_generator::{NanoIdRefreshTokenGenerator, RefreshTokenLength};
 use session_repository::PgSessionRepository;
-use sqlx::Postgres;
 use tokio::sync::Mutex;
 use user_repository::PgUserRepository;
-
-pub type PgTransaction = sqlx::Transaction<'static, Postgres>;
 
 pub trait ConfigModule:
     Module

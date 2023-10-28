@@ -1,9 +1,3 @@
-#![feature(trait_alias)]
-
-extern crate di_macro;
-
-// pub use di_macro::FromModule;
-
 pub trait Provide<T: Sized> {
     fn provide(&self) -> T;
 }

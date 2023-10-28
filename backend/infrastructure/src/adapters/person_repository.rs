@@ -8,7 +8,7 @@ use app::{
 use sqlx::FromRow;
 use tokio::sync::Mutex;
 
-use crate::PgTransaction;
+use crate::pg::PgTransaction;
 
 #[derive(Debug, FromRow)]
 struct PgPerson {
