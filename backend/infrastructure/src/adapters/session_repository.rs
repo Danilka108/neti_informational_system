@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use app::ports::{EntityAlreadyExistError, EntityDoesNotExistError, SessionRepository};
 use app::session::Session;
+use app::Ref;
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 
@@ -31,7 +32,7 @@ impl TryFrom<Session> for PgSession {
         }: Session,
     ) -> Result<Self, Self::Error> {
         Ok(PgSession {
-            user_id,
+            user_id: *user_id,
             metadata,
             refresh_token,
             expires_at_in_seconds: expires_at
@@ -55,7 +56,7 @@ impl TryFrom<PgSession> for Session {
         }: PgSession,
     ) -> Result<Self, Self::Error> {
         Ok(Session {
-            user_id,
+            user_id: Ref::from(user_id),
             metadata,
             refresh_token,
             expires_at: u64::try_from(expires_at_in_seconds)
@@ -116,7 +117,7 @@ impl SessionRepository for PgSessionRepository {
         let conn = &mut **self.txn.lock().await;
 
         let expires_at = i64::try_from(session.expires_at.seconds.val)
-            .context("failed to convert u64 to i64")?;
+            .context("failed to convert u64 to i64")? as i32;
 
         let insert_result = sqlx::query_as!(
             PgSession,
@@ -127,7 +128,7 @@ impl SessionRepository for PgSessionRepository {
                     ON CONFLICT DO NOTHING
                     RETURNING *;
             "#,
-            session.user_id,
+            *session.user_id,
             &session.metadata,
             &session.refresh_token,
             expires_at,
@@ -149,7 +150,7 @@ impl SessionRepository for PgSessionRepository {
         let conn = &mut **self.txn.lock().await;
 
         let expires_at = i64::try_from(session.expires_at.seconds.val)
-            .context("failed to convert u64 to i64")?;
+            .context("failed to convert u64 to i64")? as i32;
 
         let insert_result = sqlx::query_as!(
             PgSession,
@@ -163,7 +164,7 @@ impl SessionRepository for PgSessionRepository {
                         user_id = $1 AND metadata = $2
                     RETURNING *;
             "#,
-            session.user_id,
+            *session.user_id,
             &session.metadata,
             &session.refresh_token,
             expires_at,

@@ -1,6 +1,9 @@
 use anyhow::Context;
 
-use crate::person::{CreatePersonError, Person, PersonService};
+use crate::{
+    person::{CreatePersonException, Person, PersonService},
+    Outcome, Ref,
+};
 
 use super::{DynPasswordHasher, DynUserRepository, Role, User};
 
@@ -17,11 +20,9 @@ impl UserService {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum AuthenticateUserError {
+pub enum AuthenticateUserException {
     #[error("invalid login or password")]
     InvalidLoginOrPassword,
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
 }
 
 impl UserService {
@@ -29,11 +30,11 @@ impl UserService {
         self,
         email: &str,
         password: &str,
-    ) -> Result<User, AuthenticateUserError> {
+    ) -> Outcome<User, AuthenticateUserException> {
         let maybe_user = self.repo.find_by_email(email).await?;
 
         let Some(user) = maybe_user else {
-            return Err(AuthenticateUserError::InvalidLoginOrPassword);
+            return Outcome::Exception(AuthenticateUserException::InvalidLoginOrPassword);
         };
 
         let is_password_not_matches = !self
@@ -42,21 +43,19 @@ impl UserService {
             .await?;
 
         if is_password_not_matches {
-            return Err(AuthenticateUserError::InvalidLoginOrPassword);
+            return Outcome::Exception(AuthenticateUserException::InvalidLoginOrPassword);
         }
 
-        Ok(user)
+        Outcome::Success(user)
     }
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum CreateUserError {
+pub enum CreateUserException {
     #[error(transparent)]
-    CreatePersonError(#[from] CreatePersonError),
+    FailedToCreatePerson(#[from] CreatePersonException),
     #[error("email already in use")]
     EmailAlreadyInUse,
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
 }
 
 impl UserService {
@@ -65,11 +64,11 @@ impl UserService {
         email: String,
         password: String,
         role: Role,
-    ) -> Result<User, CreateUserError> {
+    ) -> Outcome<User, CreateUserException> {
         let is_email_already_in_use = self.repo.find_by_email(&email).await?.is_some();
 
         if is_email_already_in_use {
-            return Err(CreateUserError::EmailAlreadyInUse);
+            return Outcome::Exception(CreateUserException::EmailAlreadyInUse);
         }
 
         let hashed_password = self.pass_hasher.hash(password).await?;
@@ -77,8 +76,7 @@ impl UserService {
         let Person { id: person_id, .. } = self.person_service.create().await?;
 
         let user = User {
-            id: (),
-            person_id,
+            id: Ref::from(person_id),
             role,
             email,
             hashed_password,
@@ -90,6 +88,6 @@ impl UserService {
             .await?
             .context("user not existence is checked before inserting, but an error occurs")?;
 
-        Ok(user)
+        Outcome::Success(user)
     }
 }

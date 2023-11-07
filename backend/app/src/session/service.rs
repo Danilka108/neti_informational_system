@@ -1,5 +1,7 @@
 use anyhow::Context;
 
+use crate::Outcome;
+
 use super::{DynSessionRepository, Session, SessionTTL, SessionsMaxNumber};
 
 pub struct SessionService {
@@ -9,15 +11,13 @@ pub struct SessionService {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ValidateSessionError {
+pub enum ValidateSessionException {
     #[error("no session found")]
     NoSessionFound,
     #[error("invalid refresh token")]
     InvalidRefreshToken,
     #[error("session expired")]
     SessionExpired,
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
 }
 
 impl SessionService {
@@ -26,29 +26,29 @@ impl SessionService {
         user_id: i32,
         metadata: &str,
         refresh_token: &str,
-    ) -> Result<Session, ValidateSessionError> {
+    ) -> Outcome<Session, ValidateSessionException> {
         let Some(session) = self.repo.find(user_id, metadata).await? else {
             self.repo.delete_all(user_id).await?;
-            return Err(ValidateSessionError::NoSessionFound);
+            return Outcome::Exception(ValidateSessionException::NoSessionFound);
         };
 
         if session.refresh_token != refresh_token {
             self.repo.delete_all(user_id).await?;
-            return Err(ValidateSessionError::InvalidRefreshToken);
+            return Outcome::Exception(ValidateSessionException::InvalidRefreshToken);
         }
 
         if session.is_expired()? {
             self.repo.delete_all(user_id).await?;
-            return Err(ValidateSessionError::SessionExpired);
+            return Outcome::Exception(ValidateSessionException::SessionExpired);
         }
 
-        Ok(session)
+        Outcome::Success(session)
     }
 
     async fn is_session_exist(&self, session: &Session) -> Result<bool, anyhow::Error> {
         let result = self
             .repo
-            .find(session.user_id, &session.metadata)
+            .find(*session.user_id, &session.metadata)
             .await?
             .is_some();
 
@@ -57,11 +57,9 @@ impl SessionService {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum DeleteSessionError {
+pub enum DeleteSessionException {
     #[error(transparent)]
-    ValidateError(#[from] ValidateSessionError),
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
+    FailedToValidateSession(#[from] ValidateSessionException),
 }
 
 impl SessionService {
@@ -70,7 +68,7 @@ impl SessionService {
         user_id: i32,
         metadata: &str,
         refresh_token_to_validate: &str,
-    ) -> Result<Session, DeleteSessionError> {
+    ) -> Outcome<Session, DeleteSessionException> {
         let _ = self
             .validate(user_id, metadata, refresh_token_to_validate)
             .await?;
@@ -80,16 +78,14 @@ impl SessionService {
                 "the session existence was checked before deleting it, but an error occurs",
             )?;
 
-        Ok(deleted_session)
+        Outcome::Success(deleted_session)
     }
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum UpdateSessionError {
+pub enum UpdateSessionException {
     #[error(transparent)]
-    ValidateSessionError(#[from] ValidateSessionError),
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
+    FailedToValidateSession(#[from] ValidateSessionException),
 }
 
 impl SessionService {
@@ -99,7 +95,7 @@ impl SessionService {
         metadata: String,
         refresh_token_to_validate: &str,
         new_refresh_token: String,
-    ) -> Result<Session, UpdateSessionError> {
+    ) -> Outcome<Session, UpdateSessionException> {
         let old_session = self
             .validate(user_id, &metadata, refresh_token_to_validate)
             .await?;
@@ -114,16 +110,14 @@ impl SessionService {
                 "the session existence was checked before updating it, but an error occurs",
             )?;
 
-        Ok(session)
+        Outcome::Success(session)
     }
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum SaveSessionError {
+pub enum SaveSessionException {
     #[error("the limit on the sessions number has been reached, the maximum number of sessions is {}", .limit)]
     SessionsLimitReached { limit: usize },
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
 }
 
 impl SessionService {
@@ -132,7 +126,7 @@ impl SessionService {
         user_id: i32,
         metadata: String,
         refresh_token: String,
-    ) -> Result<Session, SaveSessionError> {
+    ) -> Outcome<Session, SaveSessionException> {
         let SessionsMaxNumber(sessions_max_number) = self.sessions_max_number;
         let SessionTTL(session_ttl) = self.session_ttl;
 
@@ -143,7 +137,7 @@ impl SessionService {
                 "the session existence was checked before updating it, but an error occurs",
             )?
         } else {
-            self.check_user_limit(session.user_id, sessions_max_number)
+            self.check_user_limit(*session.user_id, sessions_max_number)
                 .await?;
 
             self.repo.insert(session).await?.context(
@@ -151,22 +145,22 @@ impl SessionService {
             )?
         };
 
-        Ok(session)
+        Outcome::Success(session)
     }
 
     async fn check_user_limit(
         &self,
         user_id: i32,
         sessions_max_number: usize,
-    ) -> Result<(), SaveSessionError> {
+    ) -> Outcome<(), SaveSessionException> {
         let sessions_number = self.repo.count_not_expired_by_user_id(user_id).await?;
 
         if sessions_number >= sessions_max_number {
-            Err(SaveSessionError::SessionsLimitReached {
+            Outcome::Exception(SaveSessionException::SessionsLimitReached {
                 limit: sessions_max_number,
             })
         } else {
-            Ok(())
+            Outcome::Success(())
         }
     }
 }

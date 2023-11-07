@@ -1,7 +1,11 @@
 use crate::{
-    session::{DeleteSessionError, SaveSessionError, Session, SessionService, UpdateSessionError},
+    session::{
+        DeleteSessionException, SaveSessionException, Session, SessionService,
+        UpdateSessionException,
+    },
     token::{TokenService, Tokens},
-    user::{AuthenticateUserError, UserService},
+    user::{AuthenticateUserException, UserService},
+    Outcome,
 };
 
 pub struct AuthService {
@@ -11,13 +15,11 @@ pub struct AuthService {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum LoginError {
+pub enum LoginException {
     #[error(transparent)]
-    SaveSessionError(#[from] SaveSessionError),
+    FailedToSaveSession(#[from] SaveSessionException),
     #[error(transparent)]
-    AuthenticateError(#[from] AuthenticateUserError),
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
+    FailedToAuthenticate(#[from] AuthenticateUserException),
 }
 
 impl AuthService {
@@ -26,7 +28,7 @@ impl AuthService {
         email: &str,
         password: &str,
         session_metadata: String,
-    ) -> Result<Tokens, LoginError> {
+    ) -> Outcome<Tokens, LoginException> {
         let user = self.user_service.authenticate(email, password).await?;
 
         let Tokens {
@@ -36,10 +38,10 @@ impl AuthService {
 
         let Session { refresh_token, .. } = self
             .session_service
-            .save(user.id, session_metadata, refresh_token)
+            .save(*user.id, session_metadata, refresh_token)
             .await?;
 
-        Ok(Tokens {
+        Outcome::Success(Tokens {
             access_token,
             refresh_token,
         })
@@ -47,13 +49,11 @@ impl AuthService {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum RefreshTokenError {
+pub enum RefreshTokenException {
     #[error(transparent)]
-    UpdateSessionError(#[from] UpdateSessionError),
+    FailedToUpdateSession(#[from] UpdateSessionException),
     #[error("user does not exist")]
     UserDoesNotExist,
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
 }
 
 impl AuthService {
@@ -62,9 +62,9 @@ impl AuthService {
         user_id: i32,
         refresh_token_to_validate: &str,
         session_metadata: String,
-    ) -> Result<Tokens, RefreshTokenError> {
+    ) -> Outcome<Tokens, RefreshTokenException> {
         let Some(user) = self.user_service.find_by_id(user_id).await? else {
-            return Err(RefreshTokenError::UserDoesNotExist);
+            return Outcome::Exception(RefreshTokenException::UserDoesNotExist);
         };
 
         let Tokens {
@@ -82,27 +82,19 @@ impl AuthService {
             )
             .await?;
 
-        Ok(Tokens {
+        Outcome::Success(Tokens {
             access_token,
             refresh_token,
         })
     }
 }
 
-pub struct Logout<'r, 'm> {
-    pub user_id: i32,
-    pub refresh_token: &'r str,
-    pub session_metadata: &'m str,
-}
-
 #[derive(Debug, thiserror::Error)]
-pub enum LogoutError {
+pub enum LogoutException {
     #[error("user does not exist")]
     UserDoesNotExist,
     #[error(transparent)]
-    DeleteSessionError(#[from] DeleteSessionError),
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
+    FailedToDeleteSession(#[from] DeleteSessionException),
 }
 
 impl AuthService {
@@ -111,9 +103,9 @@ impl AuthService {
         user_id: i32,
         refresh_token_to_validate: &str,
         session_metadata: &str,
-    ) -> Result<(), LogoutError> {
+    ) -> Outcome<(), LogoutException> {
         let Some(_user) = self.user_service.find_by_id(user_id).await? else {
-            return Err(LogoutError::UserDoesNotExist);
+            return Outcome::Exception(LogoutException::UserDoesNotExist);
         };
 
         let _deleted_session = self
@@ -121,6 +113,6 @@ impl AuthService {
             .delete(user_id, session_metadata, refresh_token_to_validate)
             .await;
 
-        Ok(())
+        Outcome::Success(())
     }
 }

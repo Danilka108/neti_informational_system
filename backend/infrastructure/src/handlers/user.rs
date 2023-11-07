@@ -1,34 +1,17 @@
-use app::person::CreatePersonError;
-use app::user::{CreateUserError, Role, UserService};
-use axum::{response::IntoResponse, routing::post, Json, Router};
+use app::user::{CreateUserException, Role, UserService};
+use axum::response::IntoResponse;
+use axum::{routing::post, Json, Router};
 use di::Module;
 use http::StatusCode;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde_json::json;
 
-use crate::utils::{extractors::DiContainer, IntoApiError, ResBody, Result};
+use crate::utils::{extractors::DiContainer, Reply};
 
-use crate::utils::CommonState;
+use crate::utils::{ApiResult, CommonState};
 
 pub fn router<S: CommonState>() -> Router<S> {
     Router::new().route("/", post(create))
-}
-
-impl IntoApiError for CreatePersonError {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            Self::Other(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-}
-
-impl IntoApiError for CreateUserError {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            Self::Other(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Self::CreatePersonError(err) => err.status_code(),
-            Self::EmailAlreadyInUse => StatusCode::BAD_REQUEST,
-        }
-    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -37,26 +20,36 @@ struct CreatePayload {
     password: String,
 }
 
-#[derive(Serialize)]
-struct CreateResult {
-    id: i32,
+struct CreateError(CreateUserException);
+
+impl IntoResponse for CreateError {
+    fn into_response(self) -> axum::response::Response {
+        let Self(ex) = self;
+
+        let code = match ex {
+            CreateUserException::FailedToCreatePerson(_) => StatusCode::BAD_REQUEST,
+            CreateUserException::EmailAlreadyInUse => StatusCode::BAD_REQUEST,
+        };
+
+        (code, Reply::from(ex)).into_response()
+    }
 }
 
 #[axum::debug_handler]
-async fn create(
-    DiContainer(di): DiContainer,
-    Json(payload): Json<CreatePayload>,
-) -> Result<impl IntoResponse> {
+async fn create(DiContainer(di): DiContainer, Json(payload): Json<CreatePayload>) -> ApiResult {
     let user = di
         .resolve::<UserService>()
         .create(payload.email, payload.password, Role::Admin)
-        .await?;
+        .await
+        .map_exception(CreateError)?;
 
-    Ok((
+    ApiResult::new((
         StatusCode::OK,
-        ResBody {
+        Reply {
             message: "user created successfully",
-            data: Some(CreateResult { id: user.id }),
+            data: json!({
+                "id": *user.id
+            }),
         },
     ))
 }

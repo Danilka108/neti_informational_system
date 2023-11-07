@@ -1,20 +1,19 @@
 use std::time::{Duration, SystemTime};
 
 use anyhow::Context;
-use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Hash, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Hash, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Seconds {
     pub val: u64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Hash, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SecondsFromUnixEpoch {
     pub seconds: Seconds,
 }
 
 impl SecondsFromUnixEpoch {
-    pub fn new_expires_at(ttl: Seconds) -> Result<SecondsFromUnixEpoch, anyhow::Error> {
+    pub fn from_ttl(ttl: Seconds) -> Result<SecondsFromUnixEpoch, anyhow::Error> {
         let duration: Seconds = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .context("failed to get duration since unix epoch")?

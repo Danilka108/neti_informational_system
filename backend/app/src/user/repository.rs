@@ -7,7 +7,7 @@ use crate::ports::{EntityAlreadyExistError, EntityDoesNotExistError};
 pub trait UserRepository {
     async fn insert(
         &self,
-        user: User<()>,
+        user: User,
     ) -> Result<Result<User, EntityAlreadyExistError>, anyhow::Error>;
 
     async fn update(

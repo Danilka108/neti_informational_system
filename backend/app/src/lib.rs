@@ -1,3 +1,7 @@
+#![feature(try_trait_v2)]
+
+use std::{marker::PhantomData, ops::Deref};
+
 use auth::AuthService;
 use di::{Module, Provide};
 use person::{DynPersonRepository, PersonService};
@@ -6,11 +10,37 @@ use token::{AccessTokenTTL, DynAccessTokenEngine, DynRefreshTokenGenerator, Toke
 use user::{DynPasswordHasher, DynUserRepository, UserService};
 
 pub mod auth;
+pub mod outcome;
 pub mod person;
 pub mod ports;
 pub mod session;
 pub mod token;
 pub mod user;
+
+pub use outcome::Outcome;
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub struct Ref<I, E>(pub I, PhantomData<E>);
+
+impl<I: Default, E> Default for Ref<I, E> {
+    fn default() -> Self {
+        Self(I::default(), PhantomData)
+    }
+}
+
+impl<I, E> From<I> for Ref<I, E> {
+    fn from(value: I) -> Self {
+        Self(value, PhantomData)
+    }
+}
+
+impl<I, E> Deref for Ref<I, E> {
+    type Target = I;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 pub trait AdaptersModule:
     Module

@@ -1,13 +1,11 @@
 mod repository;
 mod service;
 
-use serde::{Deserialize, Serialize};
-
 pub use repository::PersonRepository;
-pub use service::{CreatePersonError, PersonService};
+pub use service::{CreatePersonException, PersonService};
 pub type DynPersonRepository = Box<dyn PersonRepository + Send + Sync>;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, Hash)]
 pub struct Person<Id = i32> {
     pub id: Id,
 }

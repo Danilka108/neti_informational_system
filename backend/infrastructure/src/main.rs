@@ -1,4 +1,5 @@
 #![feature(iterator_try_collect)]
+#![feature(try_trait_v2)]
 
 use state::AppState;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
@@ -12,7 +13,7 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
-    dotenv::from_path("../../.env").unwrap();
+    dotenv::from_path(".env").unwrap();
 
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::from_default_env())

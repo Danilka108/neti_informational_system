@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use app::ports::{EntityAlreadyExistError, EntityDoesNotExistError, UserRepository};
 use app::user::{HashedPassword, Role, User};
+use app::Ref;
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 
@@ -21,7 +22,6 @@ pub(super) enum PgRole {
 #[derive(Debug, sqlx::FromRow)]
 struct PgUser {
     id: i32,
-    person_id: i32,
     email: String,
     hashed_password: String,
     role: PgRole,
@@ -47,15 +47,13 @@ impl From<PgUser> for User {
     fn from(
         PgUser {
             id,
-            person_id,
             email,
             hashed_password,
             role,
         }: PgUser,
     ) -> Self {
         Self {
-            id,
-            person_id,
+            id: Ref::from(id),
             email,
             hashed_password: HashedPassword(hashed_password),
             role: role.into(),
@@ -67,7 +65,7 @@ impl From<PgUser> for User {
 impl UserRepository for PgUserRepository {
     async fn insert(
         &self,
-        user: User<()>,
+        user: User,
     ) -> Result<Result<User, EntityAlreadyExistError>, anyhow::Error> {
         let conn = &mut **self.txn.lock().await;
 
@@ -75,15 +73,15 @@ impl UserRepository for PgUserRepository {
             PgUser,
             r#"
                 INSERT
-                    INTO users (person_id, email, hashed_password, role)
+                    INTO users (id, email, hashed_password, role)
                     VALUES ($4, $1, $2, $3)
                     ON CONFLICT DO NOTHING
-                    RETURNING id, email, person_id, hashed_password, role as "role!: PgRole";
+                    RETURNING id, email, hashed_password, role as "role!: PgRole";
             "#,
             &*user.email,
             &*user.hashed_password.0,
             PgRole::from(user.role) as PgRole,
-            user.person_id,
+            *user.id,
         )
         .fetch_optional(conn)
         .await;
@@ -109,16 +107,14 @@ impl UserRepository for PgUserRepository {
                     SET
                         email = $1,
                         hashed_password = $2,
-                        role = $3,
-                        person_id = $4
-                    WHERE id = $5
-                    RETURNING id, person_id, email, hashed_password, role as "role!: PgRole";
+                        role = $3
+                    WHERE id = $4
+                    RETURNING id, email, hashed_password, role as "role!: PgRole";
             "#,
             &*user.email,
             &*user.hashed_password.0,
             PgRole::from(user.role) as PgRole,
-            user.person_id,
-            user.id,
+            *user.id,
         )
         .fetch_optional(conn)
         .await;
@@ -137,7 +133,7 @@ impl UserRepository for PgUserRepository {
         let record = sqlx::query_as!(
             PgUser,
             r#"
-            SELECT id, person_id, email, hashed_password, role as "role!: PgRole"
+            SELECT id, email, hashed_password, role as "role!: PgRole"
                 FROM users
                 WHERE users.email = $1
             "#,
@@ -157,7 +153,7 @@ impl UserRepository for PgUserRepository {
         let record = sqlx::query_as!(
             PgUser,
             r#"
-            SELECT id, person_id, email, hashed_password, role as "role!: PgRole"
+            SELECT id, email, hashed_password, role as "role!: PgRole"
                 FROM users
                 WHERE users.id = $1
             "#,
