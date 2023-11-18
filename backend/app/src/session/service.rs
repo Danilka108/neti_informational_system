@@ -1,3 +1,5 @@
+use std::num::NonZeroI32;
+
 use anyhow::Context;
 
 use crate::Outcome;
@@ -23,7 +25,7 @@ pub enum ValidateSessionException {
 impl SessionService {
     async fn validate(
         &self,
-        user_id: i32,
+        user_id: NonZeroI32,
         metadata: &str,
         refresh_token: &str,
     ) -> Outcome<Session, ValidateSessionException> {
@@ -65,7 +67,7 @@ pub enum DeleteSessionException {
 impl SessionService {
     pub(crate) async fn delete(
         self,
-        user_id: i32,
+        user_id: NonZeroI32,
         metadata: &str,
         refresh_token_to_validate: &str,
     ) -> Outcome<Session, DeleteSessionException> {
@@ -91,7 +93,7 @@ pub enum UpdateSessionException {
 impl SessionService {
     pub(crate) async fn update(
         self,
-        user_id: i32,
+        user_id: NonZeroI32,
         metadata: String,
         refresh_token_to_validate: &str,
         new_refresh_token: String,
@@ -123,7 +125,7 @@ pub enum SaveSessionException {
 impl SessionService {
     pub(crate) async fn save(
         self,
-        user_id: i32,
+        user_id: NonZeroI32,
         metadata: String,
         refresh_token: String,
     ) -> Outcome<Session, SaveSessionException> {
@@ -150,7 +152,7 @@ impl SessionService {
 
     async fn check_user_limit(
         &self,
-        user_id: i32,
+        user_id: NonZeroI32,
         sessions_max_number: usize,
     ) -> Outcome<(), SaveSessionException> {
         let sessions_number = self.repo.count_not_expired_by_user_id(user_id).await?;

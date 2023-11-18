@@ -1,3 +1,5 @@
+use std::num::NonZeroI32;
+
 use crate::ports::{EntityAlreadyExistError, EntityDoesNotExistError};
 
 use super::Person;
@@ -14,5 +16,5 @@ pub trait PersonRepository {
         person: Person,
     ) -> Result<Result<Person, EntityDoesNotExistError>, anyhow::Error>;
 
-    async fn find_by_id(&self, id: i32) -> Result<Option<Person>, anyhow::Error>;
+    async fn find_by_id(&self, id: NonZeroI32) -> Result<Option<Person>, anyhow::Error>;
 }

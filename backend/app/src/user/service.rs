@@ -1,3 +1,5 @@
+use std::num::NonZeroI32;
+
 use anyhow::Context;
 
 use crate::{
@@ -14,7 +16,7 @@ pub struct UserService {
 }
 
 impl UserService {
-    pub(crate) async fn find_by_id(self, id: i32) -> Result<Option<User>, anyhow::Error> {
+    pub(crate) async fn find_by_id(self, id: NonZeroI32) -> Result<Option<User>, anyhow::Error> {
         self.repo.find_by_id(id).await
     }
 }
@@ -76,7 +78,7 @@ impl UserService {
         let Person { id: person_id, .. } = self.person_service.create().await?;
 
         let user = User {
-            id: Ref::from(person_id),
+            id: Ref::from(NonZeroI32::try_from(person_id).unwrap()),
             role,
             email,
             hashed_password,

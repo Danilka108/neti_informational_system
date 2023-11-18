@@ -1,3 +1,5 @@
+use std::num::NonZeroI32;
+
 use async_trait::async_trait;
 
 use super::User;
@@ -17,5 +19,5 @@ pub trait UserRepository {
 
     async fn find_by_email(&self, email: &str) -> Result<Option<User>, anyhow::Error>;
 
-    async fn find_by_id(&self, id: i32) -> Result<Option<User>, anyhow::Error>;
+    async fn find_by_id(&self, id: NonZeroI32) -> Result<Option<User>, anyhow::Error>;
 }

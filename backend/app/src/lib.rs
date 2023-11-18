@@ -14,7 +14,10 @@ pub mod outcome;
 pub mod person;
 pub mod ports;
 pub mod session;
+pub mod subdivision;
+pub mod tag;
 pub mod token;
+pub mod university;
 pub mod user;
 
 pub use outcome::Outcome;
