@@ -347,6 +347,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "data"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "app",
+ "argon2",
+ "async-trait",
+ "di",
+ "jsonwebtoken",
+ "log",
+ "nanoid",
+ "password-hash",
+ "rand",
+ "serde",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "der"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
