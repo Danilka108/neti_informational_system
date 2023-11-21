@@ -74,7 +74,6 @@ create table subdivisions
   id serial primary key,
   university_id serial not null references universities,
   name varchar(256) not null,
-  kind serial not null references subdivision_kinds,
 
   unique (university_id, name)
 );
@@ -91,10 +90,10 @@ create table subdivision_members
 (
   id serial primary key,
   subdivision_id serial NOT NULL REFERENCES subdivisions,
-  member_id serial not null references persons,
+  person_id serial not null references persons,
   role varchar(512) not null,
 
-  unique (subdivision_id, member_id)
+  unique (subdivision_id, person_id)
 );
 
 create table study_groups
@@ -106,14 +105,14 @@ create table study_groups
 
 create table students
 (
-  id serial primary key references persons,
+  id serial primary key references persons
 );
 
 create table study_groups_students
 (
   study_group_id serial not null references study_groups,
   student_id serial not null references students,
-  studying_qualification qualification not null
+  studying_qualification qualification not null,
 
   primary key (study_group_id, student_id)
 );
