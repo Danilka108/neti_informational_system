@@ -1,11 +1,9 @@
-use std::num::NonZeroI32;
-
 use async_trait::async_trait;
 
 use super::User;
 use crate::{
     ports::{EntityAlreadyExistError, EntityDoesNotExistError, EntityNotFoundError},
-    Outcome,
+    Outcome, SerialId,
 };
 
 #[async_trait]
@@ -16,5 +14,5 @@ pub trait UserRepository {
 
     async fn find_by_email(&self, email: &str) -> Outcome<User, EntityNotFoundError>;
 
-    async fn find_by_id(&self, id: NonZeroI32) -> Outcome<User, EntityNotFoundError>;
+    async fn find_by_id(&self, id: SerialId) -> Outcome<User, EntityNotFoundError>;
 }

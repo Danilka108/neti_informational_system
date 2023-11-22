@@ -1,4 +1,4 @@
-use std::num::NonZeroI32;
+use crate::SerialId;
 
 #[derive(Debug, thiserror::Error)]
 pub enum CreateTagException {
@@ -15,5 +15,5 @@ pub enum UpdateTagNameException {
 #[derive(Debug, thiserror::Error)]
 pub enum DeleteTagException {
     #[error("tag {id} does not exist")]
-    TagDoesNotExist { id: NonZeroI32 },
+    TagDoesNotExist { id: SerialId },
 }

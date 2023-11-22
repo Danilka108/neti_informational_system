@@ -1,8 +1,6 @@
-use std::num::NonZeroI32;
-
 use crate::{
     ports::{EntityAlreadyExistError, EntityDoesNotExistError, EntityNotFoundError},
-    Outcome,
+    Outcome, SerialId,
 };
 
 use super::Person;
@@ -13,5 +11,5 @@ pub trait PersonRepository {
 
     async fn update(&self, person: Person) -> Outcome<Person, EntityDoesNotExistError>;
 
-    async fn find_by_id(&self, id: NonZeroI32) -> Outcome<Person, EntityNotFoundError>;
+    async fn find_by_id(&self, id: SerialId) -> Outcome<Person, EntityNotFoundError>;
 }

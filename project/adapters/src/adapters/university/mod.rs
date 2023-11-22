@@ -1,11 +1,11 @@
 mod models;
 
-use std::{num::NonZeroI32, sync::Arc};
+use std::sync::Arc;
 
 use app::{
     ports::{EntityAlreadyExistError, EntityDoesNotExistError, EntityNotFoundError},
     university::University,
-    Outcome,
+    Outcome, SerialId,
 };
 use tokio::sync::Mutex;
 
@@ -43,7 +43,7 @@ impl app::ports::UniversityRepository for PgUniveristyRepository {
         .await
     }
 
-    async fn delete(&self, id: NonZeroI32) -> Outcome<University, EntityDoesNotExistError> {
+    async fn delete(&self, id: SerialId) -> Outcome<University, EntityDoesNotExistError> {
         self.fetch_optional(sqlx::query_as!(
             PgUniversity,
             "
@@ -52,12 +52,12 @@ impl app::ports::UniversityRepository for PgUniveristyRepository {
                     WHERE id = $1
                     RETURNING *;
             ",
-            id.get()
+            id
         ))
         .await
     }
 
-    async fn get(&self, id: NonZeroI32) -> Outcome<University, EntityNotFoundError> {
+    async fn get(&self, id: SerialId) -> Outcome<University, EntityNotFoundError> {
         self.fetch_optional(sqlx::query_as!(
             PgUniversity,
             "
@@ -65,7 +65,7 @@ impl app::ports::UniversityRepository for PgUniveristyRepository {
                     FROM universities
                     WHERE id = $1;
             ",
-            id.get()
+            id
         ))
         .await
     }

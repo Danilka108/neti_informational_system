@@ -1,6 +1,6 @@
-use std::num::NonZeroI32;
-
-use crate::{person::GetPersonException, university::exceptions::UniversityDoesNotExistError};
+use crate::{
+    person::GetPersonException, university::exceptions::UniversityDoesNotExistError, SerialId,
+};
 
 #[derive(Debug, thiserror::Error)]
 #[error("the subdivision name '{subdivision_name}' for the university '{university_name}' is already in use")]
@@ -12,7 +12,7 @@ pub struct NameIsAlreadyInUseError {
 #[derive(Debug, thiserror::Error)]
 #[error("subdivision {id} does not exist")]
 pub struct SubdivisionDoesNotExistError {
-    pub(crate) id: NonZeroI32,
+    pub(crate) id: SerialId,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -47,7 +47,7 @@ pub enum AddSubdivisionTagException {
     SubdivisionDoesNotExist(#[from] SubdivisionDoesNotExistError),
     #[error("tag '{tag_name}' is already exist for subdivision {subdivision_id}")]
     TagIsAlreadyExist {
-        subdivision_id: NonZeroI32,
+        subdivision_id: SerialId,
         tag_name: String,
     },
 }
@@ -59,7 +59,7 @@ pub enum DeleteSubdivisionTagException {
     #[error("tag {tag_name} does not exist for subdivision {subdivision_id}")]
     TagDoesNotExist {
         tag_name: String,
-        subdivision_id: NonZeroI32,
+        subdivision_id: SerialId,
     },
 }
 
@@ -75,8 +75,8 @@ pub enum AddSubdivisionMemberException {
     SubdivisionDoesNotExist(#[from] SubdivisionDoesNotExistError),
     #[error("member {person_id} is already exist for subdivision {subdivision_id}")]
     MemberIsAlreadyExist {
-        person_id: NonZeroI32,
-        subdivision_id: NonZeroI32,
+        person_id: SerialId,
+        subdivision_id: SerialId,
     },
 }
 
@@ -88,8 +88,8 @@ pub enum UpdateSubdivisionMemberRoleException {
     PersonDoesNotExist(#[from] GetPersonException),
     #[error("person {person_id} is not a member of subdivision {subdivision_id}")]
     MemberDoesNotExist {
-        person_id: NonZeroI32,
-        subdivision_id: NonZeroI32,
+        person_id: SerialId,
+        subdivision_id: SerialId,
     },
 }
 
@@ -101,8 +101,8 @@ pub enum GetSubdivisionMemberException {
     PersonDoesNotExist(#[from] GetPersonException),
     #[error("person {person_id} is not a member of subdivision {subdivision_id}")]
     MemberDoesNotExist {
-        person_id: NonZeroI32,
-        subdivision_id: NonZeroI32,
+        person_id: SerialId,
+        subdivision_id: SerialId,
     },
 }
 
@@ -112,8 +112,8 @@ pub enum DeleteSubdivisionMemberException {
     SubdivisionDoesNotExist(#[from] SubdivisionDoesNotExistError),
     #[error("member {person_id} does not exist for subdivision {subdivision_id}")]
     MemberDoesNotExist {
-        person_id: NonZeroI32,
-        subdivision_id: NonZeroI32,
+        person_id: SerialId,
+        subdivision_id: SerialId,
     },
 }
 

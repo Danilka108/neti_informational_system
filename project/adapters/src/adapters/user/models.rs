@@ -1,8 +1,5 @@
-use std::num::NonZeroI32;
-
-use anyhow::Context;
 use app::user::{HashedPassword, Role, User};
-use app::Ref;
+use app::{Ref, SerialId};
 
 use crate::adapters::IntoEntity;
 
@@ -13,7 +10,7 @@ pub enum PgRole {
 }
 
 pub struct PgUser {
-    pub id: i32,
+    pub id: SerialId,
     pub email: String,
     pub hashed_password: String,
     pub role: PgRole,
@@ -38,9 +35,7 @@ impl From<PgRole> for Role {
 impl IntoEntity<User> for PgUser {
     fn into_entity(self) -> Result<User, anyhow::Error> {
         Ok(User {
-            id: Ref::from(
-                NonZeroI32::try_from(self.id).context("'id' of PgUser must be non zero i32")?,
-            ),
+            id: Ref::from(self.id),
             email: self.email,
             hashed_password: HashedPassword(self.hashed_password),
             role: self.role.into(),

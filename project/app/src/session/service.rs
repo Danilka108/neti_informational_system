@@ -1,7 +1,5 @@
-use std::num::NonZeroI32;
-
 use super::{DynSessionRepository, Session, SessionTTL, SessionsMaxNumber};
-use crate::{ports::EntityNotFoundError, Outcome};
+use crate::{ports::EntityNotFoundError, Outcome, SerialId};
 
 pub struct SessionService {
     pub(crate) repo: DynSessionRepository,
@@ -19,16 +17,10 @@ pub enum ValidateSessionException {
     SessionExpired,
 }
 
-// impl From<!> for ValidateSessionException {
-//     fn from(value: !) -> Self {
-//         value
-//     }
-// }
-
 impl SessionService {
     async fn validate(
         &self,
-        user_id: NonZeroI32,
+        user_id: SerialId,
         metadata: &str,
         refresh_token: &str,
     ) -> Outcome<Session, ValidateSessionException> {
@@ -74,7 +66,7 @@ pub enum DeleteSessionException {
 impl SessionService {
     pub(crate) async fn delete(
         self,
-        user_id: NonZeroI32,
+        user_id: SerialId,
         metadata: &str,
         refresh_token_to_validate: &str,
     ) -> Outcome<Session, DeleteSessionException> {
@@ -103,7 +95,7 @@ pub enum UpdateSessionException {
 impl SessionService {
     pub(crate) async fn update(
         self,
-        user_id: NonZeroI32,
+        user_id: SerialId,
         metadata: String,
         refresh_token_to_validate: &str,
         new_refresh_token: String,
@@ -134,7 +126,7 @@ pub enum SaveSessionException {
 impl SessionService {
     pub(crate) async fn save(
         self,
-        user_id: NonZeroI32,
+        user_id: SerialId,
         metadata: String,
         refresh_token: String,
     ) -> Outcome<Session, SaveSessionException> {
@@ -161,7 +153,7 @@ impl SessionService {
 
     async fn check_user_limit(
         &self,
-        user_id: NonZeroI32,
+        user_id: SerialId,
         sessions_max_number: usize,
     ) -> Outcome<(), SaveSessionException> {
         let sessions_number = self

@@ -1,5 +1,3 @@
-use std::num::NonZeroI32;
-
 use crate::{
     person::{Person, PersonService},
     ports::{
@@ -7,7 +5,7 @@ use crate::{
     },
     tag::Tag,
     university::{University, UniversityService},
-    Outcome,
+    Outcome, SerialId,
 };
 
 use super::{
@@ -62,7 +60,7 @@ impl SubdivisionService {
 
     pub async fn update_name(
         self,
-        id: NonZeroI32,
+        id: SerialId,
         name: String,
     ) -> Outcome<Subdivision, UpdateSubdivisionNameException> {
         let subdivision = self.get(id).await?;
@@ -78,7 +76,7 @@ impl SubdivisionService {
             })
     }
 
-    pub async fn get_tags(self, id: NonZeroI32) -> Outcome<Vec<Tag>, GetSubdivisionTagsException> {
+    pub async fn get_tags(self, id: SerialId) -> Outcome<Vec<Tag>, GetSubdivisionTagsException> {
         let subdivision = self.get(id).await?;
         let tags = self
             .tag_repo
@@ -94,7 +92,7 @@ impl SubdivisionService {
 
     pub async fn add_tag(
         self,
-        id: NonZeroI32,
+        id: SerialId,
         tag: Tag,
     ) -> Outcome<SubdivisionTag, AddSubdivisionTagException> {
         let subdivision = self.get(id).await?;
@@ -112,7 +110,7 @@ impl SubdivisionService {
 
     pub async fn delete_tag(
         self,
-        id: NonZeroI32,
+        id: SerialId,
         tag: Tag,
     ) -> Outcome<SubdivisionTag, DeleteSubdivisionTagException> {
         let subdivision = self.get(id).await?;
@@ -130,7 +128,7 @@ impl SubdivisionService {
 
     pub async fn get_members(
         self,
-        id: NonZeroI32,
+        id: SerialId,
     ) -> Outcome<Vec<SubdivisionMember>, GetSubdivisionMembersException> {
         let subdivision = self.get(id).await?;
         let members = self
@@ -144,8 +142,8 @@ impl SubdivisionService {
 
     pub async fn get_member(
         self,
-        subdivision_id: NonZeroI32,
-        person_id: NonZeroI32,
+        subdivision_id: SerialId,
+        person_id: SerialId,
     ) -> Outcome<SubdivisionMember, GetSubdivisionMemberException> {
         let subdivision =
             self.repo
@@ -172,8 +170,8 @@ impl SubdivisionService {
 
     pub async fn update_member_role(
         self,
-        subdivision_id: NonZeroI32,
-        person_id: NonZeroI32,
+        subdivision_id: SerialId,
+        person_id: SerialId,
         role: String,
     ) -> Outcome<SubdivisionMember, UpdateSubdivisionMemberRoleException> {
         let subdivision =
@@ -201,7 +199,7 @@ impl SubdivisionService {
 
     pub async fn add_member(
         self,
-        id: NonZeroI32,
+        id: SerialId,
         person: Person,
         role: String,
     ) -> Outcome<SubdivisionMember, AddSubdivisionMemberException> {
@@ -223,7 +221,7 @@ impl SubdivisionService {
 
     pub async fn delete_member(
         self,
-        id: NonZeroI32,
+        id: SerialId,
         person: Person,
     ) -> Outcome<SubdivisionMember, DeleteSubdivisionMemberException> {
         let subdivision = self.get(id).await?;
@@ -241,7 +239,7 @@ impl SubdivisionService {
 
     pub async fn get_by_university(
         self,
-        university_id: NonZeroI32,
+        university_id: SerialId,
     ) -> Outcome<Vec<Subdivision>, GetSubdivisionsByUniversityException> {
         let university = self.university_service.get(university_id).await?;
         let subdivisions = self.repo.get_by_university(university).await.collapse()?;
@@ -249,7 +247,7 @@ impl SubdivisionService {
         Outcome::Success(subdivisions)
     }
 
-    async fn get(&self, id: NonZeroI32) -> Outcome<Subdivision, SubdivisionDoesNotExistError> {
+    async fn get(&self, id: SerialId) -> Outcome<Subdivision, SubdivisionDoesNotExistError> {
         self.repo
             .get(id)
             .await

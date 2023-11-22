@@ -1,9 +1,8 @@
-use std::num::NonZeroI32;
-
 use app::{
     session::{Seconds, SecondsFromUnixEpoch},
     token::Claims,
     user::Role,
+    SerialId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +10,7 @@ const ADMIN_ROLE_IDENT: &str = "ADMIN";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct JwtClaims {
-    pub user_id: i32,
+    pub user_id: SerialId,
     pub email: String,
     pub expires_at: u64,
     pub role: String,
@@ -24,10 +23,9 @@ pub struct ConvertJwtClaimsError;
 impl TryFrom<JwtClaims> for Claims {
     type Error = ConvertJwtClaimsError;
 
-    /// TODO: replace unwrap
     fn try_from(value: JwtClaims) -> Result<Self, Self::Error> {
         Ok(Claims {
-            user_id: NonZeroI32::try_from(value.user_id).unwrap(),
+            user_id: value.user_id,
             email: value.email,
             expires_at: SecondsFromUnixEpoch {
                 seconds: Seconds {
@@ -45,7 +43,7 @@ impl TryFrom<JwtClaims> for Claims {
 impl From<Claims> for JwtClaims {
     fn from(value: Claims) -> Self {
         Self {
-            user_id: value.user_id.get(),
+            user_id: value.user_id,
             email: value.email,
             expires_at: value.expires_at.seconds.val,
             role: match value.role {

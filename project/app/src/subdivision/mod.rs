@@ -2,9 +2,7 @@ pub mod exceptions;
 mod repositories;
 pub mod service;
 
-use std::num::NonZeroI32;
-
-use crate::{person::Person, tag::Tag, university::University};
+use crate::{person::Person, tag::Tag, university::University, SerialId};
 
 pub use repositories::SubdivisionRepository;
 pub type BoxedSubdivisionRepository = Box<dyn SubdivisionRepository>;
@@ -13,7 +11,7 @@ pub type BoxedSubdivisionTagRepository = Box<dyn SubdivisionTagRepository>;
 pub use self::repositories::{SubdivisionMemberRepository, SubdivisionTagRepository};
 
 #[derive(Debug, Clone)]
-pub struct Subdivision<Id = NonZeroI32> {
+pub struct Subdivision<Id = SerialId> {
     pub id: Id,
     pub name: String,
     pub university: University,

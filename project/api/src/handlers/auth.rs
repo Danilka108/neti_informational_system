@@ -1,6 +1,7 @@
-use std::num::NonZeroI32;
-
-use app::auth::{AuthService, LoginException, LogoutException, RefreshTokenException};
+use app::{
+    auth::{AuthService, LoginException, LogoutException, RefreshTokenException},
+    SerialId,
+};
 use axum::{response::IntoResponse, routing::post, Json, Router};
 use di::Module;
 use http::StatusCode;
@@ -70,7 +71,7 @@ async fn login(
 #[derive(Debug, Deserialize)]
 struct RefreshTokenPayload {
     refresh_token: String,
-    user_id: NonZeroI32,
+    user_id: SerialId,
 }
 
 struct RefreshTokenError(RefreshTokenException);

@@ -1,4 +1,4 @@
-use std::{num::NonZeroI32, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use super::ProvideTxn;
@@ -8,7 +8,7 @@ use app::{
     ports::{
         EntityAlreadyExistError, EntityDoesNotExistError, EntityNotFoundError, PersonRepository,
     },
-    Outcome,
+    Outcome, SerialId,
 };
 
 mod model;
@@ -38,16 +38,16 @@ impl PersonRepository for PgPersonRepository {
         self.fetch_optional(sqlx::query_as!(
             PgPerson,
             "UPDATE persons SET id = $1 WHERE id = $1 RETURNING id;",
-            person.id.get(),
+            person.id,
         ))
         .await
     }
 
-    async fn find_by_id(&self, id: NonZeroI32) -> Outcome<Person, EntityNotFoundError> {
+    async fn find_by_id(&self, id: SerialId) -> Outcome<Person, EntityNotFoundError> {
         self.fetch_optional(sqlx::query_as!(
             PgPerson,
             "SELECT id FROM persons WHERE id = $1;",
-            id.get()
+            id
         ))
         .await
     }

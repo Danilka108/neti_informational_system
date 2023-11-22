@@ -1,16 +1,16 @@
 mod repository;
 mod service;
 
-use std::num::NonZeroI32;
-
 pub use repository::PersonRepository;
 pub use service::{
     CreatePersonException, GetPersonException, PersonDoesNotExistError, PersonService,
 };
+
+use crate::SerialId;
 pub type DynPersonRepository = Box<dyn PersonRepository + Send + Sync>;
 
 #[derive(Debug, Clone, Copy, Hash)]
-pub struct Person<Id = NonZeroI32> {
+pub struct Person<Id = SerialId> {
     pub id: Id,
 }
 
