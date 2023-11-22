@@ -13,7 +13,7 @@ use crate::utils::RoleChecker;
 use crate::utils::{CommonState, Reply};
 use di::Module;
 
-use super::DiContainer;
+use super::ReqScopeModule;
 
 pub struct Auth<C: RoleChecker>(pub Claims, PhantomData<C>);
 
@@ -59,7 +59,7 @@ async fn extract_jwt_claims<C: RoleChecker, S: CommonState>(
     req_parts: &mut Parts,
     state: &S,
 ) -> Outcome<Auth<C>, AuthException> {
-    let DiContainer(di) = DiContainer::from_request_parts(req_parts, state)
+    let ReqScopeModule(module) = ReqScopeModule::from_request_parts(req_parts, state)
         .await
         .context("failed to extract DiContainer")?;
 
@@ -77,7 +77,7 @@ async fn extract_jwt_claims<C: RoleChecker, S: CommonState>(
 
     let bearer_token = &auth_header[7..];
 
-    let claims = di
+    let claims = module
         .resolve::<TokenService>()
         .extract_claims(bearer_token)
         .await?;

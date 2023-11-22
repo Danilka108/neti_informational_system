@@ -1,5 +1,6 @@
 use adapters::transaction::TransactionModule;
 
+#[derive(Debug, Clone)]
 pub struct ApiState {
     adapters_module: adapters::AdaptersModule<crate::config::ConfigModule>,
 }
