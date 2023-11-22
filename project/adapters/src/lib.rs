@@ -12,17 +12,18 @@ use pg::init_pg_conn_pool;
 use tokio::sync::Mutex;
 use transaction::TransactionModule;
 
+#[derive(Debug, Clone)]
 pub struct AdaptersModule<C> {
-    config_module: Arc<C>,
+    config_module: C,
     conn: sqlx::PgPool,
 }
 
-impl<C: ConfigModule> AdaptersModule<C> {
+impl<C: ConfigModule + Clone> AdaptersModule<C> {
     pub async fn new(config_module: C) -> Result<Self, anyhow::Error> {
         let conn = init_pg_conn_pool(&config_module).await?;
 
         Ok(Self {
-            config_module: Arc::new(config_module),
+            config_module: config_module.clone(),
             conn,
         })
     }
@@ -31,7 +32,7 @@ impl<C: ConfigModule> AdaptersModule<C> {
         let txn = Arc::new(Mutex::new(self.conn.begin().await?));
         let txn_module = TransactionModule {
             txn,
-            config: Arc::clone(&self.config_module),
+            config: self.config_module.clone(),
         };
 
         Ok(txn_module)

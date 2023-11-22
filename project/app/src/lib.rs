@@ -76,16 +76,22 @@ pub trait AdaptersModule:
 
 #[derive(Debug, Clone)]
 pub struct AppModule<A> {
-    pub adapters: A,
+    pub(crate) adapters: A,
 }
 
-impl<A> std::ops::Deref for AppModule<A> {
-    type Target = A;
-
-    fn deref(&self) -> &Self::Target {
-        &self.adapters
+impl<A> AppModule<A> {
+    pub fn new(adapters: A) -> Self {
+        Self { adapters }
     }
 }
+
+// impl<A> std::ops::Deref for AppModule<A> {
+//     type Target = A;
+
+//     fn deref(&self) -> &Self::Target {
+//         &self.adapters
+//     }
+// }
 
 impl<A> Module for AppModule<A> {}
 

@@ -9,7 +9,7 @@ use di::{Module, Provide};
 use log::LevelFilter;
 use std::sync::Arc;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConfigModule {
     pub sessions_max_number: SessionsMaxNumber,
     pub session_ttl: SessionTTL,

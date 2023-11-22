@@ -22,7 +22,7 @@ pub use crate::config::ConfigModule;
 
 #[derive(Debug, Clone)]
 pub struct TransactionModule<C> {
-    pub(crate) config: Arc<C>,
+    pub(crate) config: C,
     pub(crate) txn: Arc<Mutex<PgTransaction>>,
 }
 

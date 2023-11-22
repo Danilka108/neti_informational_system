@@ -1,3 +1,5 @@
+use std::num::NonZeroI32;
+
 use app::auth::{AuthService, LoginException, LogoutException, RefreshTokenException};
 use axum::{response::IntoResponse, routing::post, Json, Router};
 use di::Module;
@@ -6,7 +8,7 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::utils::{
-    extractors::{DiContainer, SessionMetadata},
+    extractors::{ReqScopeModule, SessionMetadata},
     ApiResult, EmptyData, Reply,
 };
 
@@ -43,11 +45,11 @@ impl IntoResponse for LoginError {
 
 #[axum::debug_handler]
 async fn login(
-    DiContainer(di): DiContainer,
+    ReqScopeModule(module): ReqScopeModule,
     SessionMetadata(metadata): SessionMetadata,
     Json(payload): Json<LoginPayload>,
 ) -> ApiResult {
-    let tokens = di
+    let tokens = module
         .resolve::<AuthService>()
         .login(&payload.email, &payload.password, metadata)
         .await
@@ -68,7 +70,7 @@ async fn login(
 #[derive(Debug, Deserialize)]
 struct RefreshTokenPayload {
     refresh_token: String,
-    user_id: i32,
+    user_id: NonZeroI32,
 }
 
 struct RefreshTokenError(RefreshTokenException);
@@ -88,11 +90,11 @@ impl IntoResponse for RefreshTokenError {
 
 #[axum::debug_handler]
 async fn refresh_token(
-    DiContainer(di): DiContainer,
+    ReqScopeModule(module): ReqScopeModule,
     SessionMetadata(metadata): SessionMetadata,
     Json(payload): Json<RefreshTokenPayload>,
 ) -> ApiResult {
-    let tokens = di
+    let tokens = module
         .resolve::<AuthService>()
         .refresh_token(payload.user_id, &payload.refresh_token, metadata)
         .await
@@ -127,11 +129,12 @@ impl IntoResponse for LogoutError {
 
 #[axum::debug_handler]
 async fn logout(
-    DiContainer(di): DiContainer,
+    ReqScopeModule(module): ReqScopeModule,
     SessionMetadata(metadata): SessionMetadata,
     Json(payload): Json<RefreshTokenPayload>,
 ) -> ApiResult {
-    di.resolve::<AuthService>()
+    module
+        .resolve::<AuthService>()
         .logout(payload.user_id, &payload.refresh_token, &metadata)
         .await
         .map_exception(LogoutError)?;

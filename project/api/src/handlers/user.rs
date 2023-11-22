@@ -6,7 +6,7 @@ use http::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::utils::{extractors::DiContainer, Reply};
+use crate::utils::{extractors::ReqScopeModule, Reply};
 
 use crate::utils::{ApiResult, CommonState};
 
@@ -36,8 +36,11 @@ impl IntoResponse for CreateError {
 }
 
 #[axum::debug_handler]
-async fn create(DiContainer(di): DiContainer, Json(payload): Json<CreatePayload>) -> ApiResult {
-    let user = di
+async fn create(
+    ReqScopeModule(module): ReqScopeModule,
+    Json(payload): Json<CreatePayload>,
+) -> ApiResult {
+    let user = module
         .resolve::<UserService>()
         .create(payload.email, payload.password, Role::Admin)
         .await
