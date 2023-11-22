@@ -1,4 +1,4 @@
-use std::{convert::Infallible, num::NonZeroI32, sync::Arc};
+use std::{convert::Infallible, sync::Arc};
 use tokio::sync::Mutex;
 
 use super::ProvideTxn;
@@ -16,7 +16,7 @@ use app::{
         SubdivisionTag, SubdivisionTagRepository,
     },
     university::University,
-    Outcome,
+    Outcome, SerialId,
 };
 
 mod models;
@@ -73,12 +73,12 @@ impl SubdivisionRepository for PgSubdivisionRepository {
                     FROM add_subdivision AS a INNER JOIN universities AS u ON u.id = a.university_id;
             "#,
             &subdivision.name,
-            subdivision.university.id.get()
+            subdivision.university.id
         ))
         .await
     }
 
-    async fn delete(&self, id: NonZeroI32) -> Outcome<Subdivision, EntityDoesNotExistError> {
+    async fn delete(&self, id: SerialId) -> Outcome<Subdivision, EntityDoesNotExistError> {
         self.fetch_optional(sqlx::query_as!(
             PgSubdivision,
             r#"
@@ -91,14 +91,14 @@ impl SubdivisionRepository for PgSubdivisionRepository {
                 SELECT d.id AS subdivision_id, d.name AS subdivision_name, u.id as university_id, u.name AS university_name
                     FROM delete_subdivision AS d INNER JOIN universities as u ON d.university_id = u.id;
             "#,
-            id.get(),
+            id,
         ))
         .await
     }
 
     async fn update_name(
         &self,
-        id: NonZeroI32,
+        id: SerialId,
         name: String,
     ) -> Outcome<Subdivision, UniqualValueError> {
         self.fetch_optional(sqlx::query_as!(
@@ -118,12 +118,12 @@ impl SubdivisionRepository for PgSubdivisionRepository {
                         INNER JOIN universities as u ON s.university_id = u.id;
             "#,
             &name,
-            id.get(),
+            id,
         ))
         .await
     }
 
-    async fn get(&self, id: NonZeroI32) -> Outcome<Subdivision, EntityNotFoundError> {
+    async fn get(&self, id: SerialId) -> Outcome<Subdivision, EntityNotFoundError> {
         self.fetch_optional(sqlx::query_as!(
             PgSubdivision,
             r#"
@@ -131,7 +131,7 @@ impl SubdivisionRepository for PgSubdivisionRepository {
                     FROM subdivisions AS s INNER JOIN universities AS u ON s.university_id = u.id
                     WHERE s.id = $1;
             "#,
-            id.get(),
+            id,
         ))
         .await
     }
@@ -148,7 +148,7 @@ impl SubdivisionRepository for PgSubdivisionRepository {
                         INNER JOIN universities AS u ON s.university_id = u.id
                     WHERE u.id = $1;
             "#,
-            university.id.get(),
+            university.id,
         ))
         .await
     }
@@ -180,8 +180,8 @@ impl SubdivisionMemberRepository for PgSubdivisionMemberRepository {
                     INNER JOIN persons AS p ON p.id = i.person_id
                     INNER JOIN universities as u ON u.id = s.university_id;
             ",
-            member.id.0.id.get(),
-            member.id.1.id.get(),
+            member.id.0.id,
+            member.id.1.id,
             &member.role,
         ))
         .await
@@ -210,8 +210,8 @@ impl SubdivisionMemberRepository for PgSubdivisionMemberRepository {
                     INNER JOIN persons AS p ON p.id = d.person_id
                     INNER JOIN universities as u ON u.id = s.university_id;
             ",
-            id.0.id.get(),
-            id.1.id.get(),
+            id.0.id,
+            id.1.id,
         ))
         .await
     }
@@ -239,8 +239,8 @@ impl SubdivisionMemberRepository for PgSubdivisionMemberRepository {
                     INNER JOIN persons AS p ON p.id = um.person_id
                     INNER JOIN universities as u ON u.id = s.university_id;
             ",
-            member.id.0.id.get(),
-            member.id.1.id.get(),
+            member.id.0.id,
+            member.id.1.id,
             &member.role,
         ))
         .await
@@ -264,8 +264,8 @@ impl SubdivisionMemberRepository for PgSubdivisionMemberRepository {
                     INNER JOIN universities as u ON u.id = s.university_id
                 WHERE sm.subdivision_id = $1 AND sm.person_id = $2;
             ",
-            id.0.id.get(),
-            id.1.id.get(),
+            id.0.id,
+            id.1.id,
         ))
         .await
     }
@@ -288,7 +288,7 @@ impl SubdivisionMemberRepository for PgSubdivisionMemberRepository {
                     INNER JOIN universities as u ON u.id = s.university_id
                 WHERE sm.subdivision_id = $1;
             ",
-            subdivision.id.get(),
+            subdivision.id,
         ))
         .await
     }
@@ -319,8 +319,8 @@ impl SubdivisionTagRepository for PgSubdivisionTagRepository {
                     INNER JOIN tags AS t ON t.id = a.tag_id
                     INNER JOIN universities AS u ON u.id = s.university_id;
             ",
-            tag.0.id.get(),
-            tag.1.id.get(),
+            tag.0.id,
+            tag.1.id,
         ))
         .await
     }
@@ -347,8 +347,8 @@ impl SubdivisionTagRepository for PgSubdivisionTagRepository {
                     INNER JOIN tags AS t ON t.id = a.tag_id
                     INNER JOIN universities AS u ON u.id = s.university_id;
             ",
-            tag.0.id.get(),
-            tag.1.id.get(),
+            tag.0.id,
+            tag.1.id,
         ))
         .await
     }
@@ -370,7 +370,7 @@ impl SubdivisionTagRepository for PgSubdivisionTagRepository {
                     INNER JOIN universities AS u ON u.id = s.university_id
                 WHERE st.subdivision_id = $1;
             ",
-            subdivision.id.get(),
+            subdivision.id,
         ))
         .await
     }

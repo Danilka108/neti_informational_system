@@ -1,8 +1,6 @@
-use std::num::NonZeroI32;
-
 use crate::{
     ports::{EntityAlreadyExistError, EntityDoesNotExistError, EntityNotFoundError},
-    Outcome,
+    Outcome, SerialId,
 };
 
 use super::{exceptions::*, BoxedUniversityRepository, University};
@@ -24,7 +22,7 @@ impl UniversityService {
             })
     }
 
-    pub async fn delete(self, id: NonZeroI32) -> Outcome<University, DeleteUniversityException> {
+    pub async fn delete(self, id: SerialId) -> Outcome<University, DeleteUniversityException> {
         self.repo
             .delete(id)
             .await
@@ -35,7 +33,7 @@ impl UniversityService {
             })
     }
 
-    pub async fn get(self, id: NonZeroI32) -> Outcome<University, UniversityDoesNotExistError> {
+    pub async fn get(self, id: SerialId) -> Outcome<University, UniversityDoesNotExistError> {
         self.repo
             .get(id)
             .await

@@ -1,13 +1,12 @@
 mod models;
 
-use std::num::NonZeroI32;
 use std::sync::Arc;
 
 use app::ports::{
     EntityAlreadyExistError, EntityDoesNotExistError, EntityNotFoundError, UserRepository,
 };
 use app::user::User;
-use app::Outcome;
+use app::{Outcome, SerialId};
 use tokio::sync::Mutex;
 
 use crate::pg::PgTransaction;
@@ -38,9 +37,9 @@ impl UserRepository for PgUserRepository {
                     ON CONFLICT DO NOTHING
                     RETURNING id, email, hashed_password, role as "role!: PgRole";
             "#,
-            user.id.get(),
-            &*user.email,
-            &*user.hashed_password.0,
+            *user.id,
+            &user.email,
+            &user.hashed_password.0,
             PgRole::from(user.role) as PgRole,
         ))
         .await
@@ -58,10 +57,10 @@ impl UserRepository for PgUserRepository {
                     WHERE id = $4
                     RETURNING id, email, hashed_password, role as "role!: PgRole";
             "#,
-            &*user.email,
-            &*user.hashed_password.0,
+            &user.email,
+            &user.hashed_password.0,
             PgRole::from(user.role) as PgRole,
-            user.id.get(),
+            *user.id,
         ))
         .await
     }
@@ -79,7 +78,7 @@ impl UserRepository for PgUserRepository {
         .await
     }
 
-    async fn find_by_id(&self, id: NonZeroI32) -> Outcome<User, EntityNotFoundError> {
+    async fn find_by_id(&self, id: SerialId) -> Outcome<User, EntityNotFoundError> {
         self.fetch_optional(sqlx::query_as!(
             PgUser,
             r#"
@@ -87,7 +86,7 @@ impl UserRepository for PgUserRepository {
                     FROM users
                     WHERE users.id = $1;
             "#,
-            id.get(),
+            id,
         ))
         .await
     }

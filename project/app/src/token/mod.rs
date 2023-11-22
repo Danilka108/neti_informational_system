@@ -2,10 +2,9 @@ mod access_token_engine;
 mod refresh_token_generator;
 mod service;
 
-use std::num::NonZeroI32;
-
 use crate::session::{Seconds, SecondsFromUnixEpoch};
 use crate::user::Role;
+use crate::SerialId;
 
 pub use access_token_engine::AccessTokenEngine;
 pub use refresh_token_generator::RefreshTokenGenerator;
@@ -16,7 +15,7 @@ pub type DynRefreshTokenGenerator = Box<dyn RefreshTokenGenerator + Send + Sync>
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Claims {
-    pub user_id: NonZeroI32,
+    pub user_id: SerialId,
     pub email: String,
     pub expires_at: SecondsFromUnixEpoch,
     pub role: Role,

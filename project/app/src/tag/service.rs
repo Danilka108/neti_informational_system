@@ -1,8 +1,6 @@
-use std::num::NonZeroI32;
-
 use crate::{
     ports::{EntityAlreadyExistError, EntityDoesNotExistError, UniqualValueError},
-    Outcome,
+    Outcome, SerialId,
 };
 
 use super::{
@@ -29,7 +27,7 @@ impl TagService {
 
     pub async fn update_name(
         self,
-        id: NonZeroI32,
+        id: SerialId,
         name: String,
     ) -> Outcome<Tag, UpdateTagNameException> {
         self.repo
@@ -38,7 +36,7 @@ impl TagService {
             .map_exception(|UniqualValueError| UpdateTagNameException::NameIsAlreadyInUse { name })
     }
 
-    pub async fn delete(self, id: NonZeroI32) -> Outcome<Tag, DeleteTagException> {
+    pub async fn delete(self, id: SerialId) -> Outcome<Tag, DeleteTagException> {
         self.repo
             .delete(id)
             .await

@@ -1,4 +1,4 @@
-use std::{convert::Infallible, num::NonZeroI32};
+use std::convert::Infallible;
 
 use crate::{
     person::Person,
@@ -6,7 +6,7 @@ use crate::{
         EntityAlreadyExistError, EntityDoesNotExistError, EntityNotFoundError, UniqualValueError,
     },
     university::University,
-    Outcome,
+    Outcome, SerialId,
 };
 
 use super::{Subdivision, SubdivisionMember, SubdivisionTag};
@@ -18,15 +18,15 @@ pub trait SubdivisionRepository {
         subdivision: Subdivision<()>,
     ) -> Outcome<Subdivision, EntityAlreadyExistError>;
 
-    async fn delete(&self, id: NonZeroI32) -> Outcome<Subdivision, EntityDoesNotExistError>;
+    async fn delete(&self, id: SerialId) -> Outcome<Subdivision, EntityDoesNotExistError>;
 
     async fn update_name(
         &self,
-        id: NonZeroI32,
+        id: SerialId,
         name: String,
     ) -> Outcome<Subdivision, UniqualValueError>;
 
-    async fn get(&self, id: NonZeroI32) -> Outcome<Subdivision, EntityNotFoundError>;
+    async fn get(&self, id: SerialId) -> Outcome<Subdivision, EntityNotFoundError>;
 
     async fn get_by_university(
         &self,

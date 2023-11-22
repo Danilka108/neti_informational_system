@@ -1,5 +1,3 @@
-use std::num::NonZeroI32;
-
 use crate::{
     ports::EntityNotFoundError,
     session::{
@@ -8,7 +6,7 @@ use crate::{
     },
     token::{TokenService, Tokens},
     user::{AuthenticateUserException, UserService},
-    Outcome,
+    Outcome, SerialId,
 };
 
 pub struct AuthService {
@@ -62,7 +60,7 @@ pub enum RefreshTokenException {
 impl AuthService {
     pub async fn refresh_token(
         self,
-        user_id: NonZeroI32,
+        user_id: SerialId,
         refresh_token_to_validate: &str,
         session_metadata: String,
     ) -> Outcome<Tokens, RefreshTokenException> {
@@ -105,7 +103,7 @@ pub enum LogoutException {
 impl AuthService {
     pub async fn logout(
         self,
-        user_id: NonZeroI32,
+        user_id: SerialId,
         refresh_token_to_validate: &str,
         session_metadata: &str,
     ) -> Outcome<(), LogoutException> {

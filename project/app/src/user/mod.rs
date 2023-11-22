@@ -2,20 +2,18 @@ mod password_hasher;
 mod repository;
 mod service;
 
-use std::num::NonZeroI32;
-
 pub use password_hasher::PasswordHasher;
 pub use repository::UserRepository;
 pub use service::{AuthenticateUserException, CreateUserException, UserService};
 
-use crate::{person::Person, Ref};
+use crate::{person::Person, Ref, SerialId};
 
 pub type DynUserRepository = Box<dyn UserRepository + Send + Sync>;
 pub type DynPasswordHasher = Box<dyn PasswordHasher + Send + Sync>;
 
 #[derive(Clone, Debug, Hash)]
 pub struct User {
-    pub id: Ref<NonZeroI32, Person>,
+    pub id: Ref<SerialId, Person>,
     pub email: String,
     pub role: Role,
     pub hashed_password: HashedPassword,

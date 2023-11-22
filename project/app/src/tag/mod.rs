@@ -2,15 +2,15 @@ pub mod exceptions;
 mod repo;
 mod service;
 
-use std::num::NonZeroI32;
-
 pub use repo::TagRepository;
 pub use service::TagService;
+
+use crate::SerialId;
 
 pub type BoxedTagRepository = Box<dyn TagRepository>;
 
 #[derive(Debug, Clone)]
-pub struct Tag<Id = NonZeroI32> {
+pub struct Tag<Id = SerialId> {
     pub id: Id,
     pub name: String,
 }

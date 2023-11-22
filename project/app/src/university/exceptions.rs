@@ -1,9 +1,9 @@
-use std::num::NonZeroI32;
+use crate::SerialId;
 
 #[derive(Debug, thiserror::Error)]
 #[error("university {id} does not exist")]
 pub struct UniversityDoesNotExistError {
-    pub(crate) id: NonZeroI32,
+    pub(crate) id: SerialId,
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -1,9 +1,7 @@
-use std::num::NonZeroI32;
-
 use crate::{
     person::{CreatePersonException, Person, PersonService},
     ports::EntityNotFoundError,
-    Outcome, Ref,
+    Outcome, SerialId,
 };
 
 use super::{DynPasswordHasher, DynUserRepository, Role, User};
@@ -15,7 +13,7 @@ pub struct UserService {
 }
 
 impl UserService {
-    pub(crate) async fn find_by_id(self, id: NonZeroI32) -> Outcome<User, EntityNotFoundError> {
+    pub(crate) async fn find_by_id(self, id: SerialId) -> Outcome<User, EntityNotFoundError> {
         self.repo.find_by_id(id).await
     }
 }
@@ -79,7 +77,7 @@ impl UserService {
         let Person { id: person_id, .. } = self.person_service.create().await?;
 
         let user = User {
-            id: Ref::from(NonZeroI32::try_from(person_id).unwrap()),
+            id: person_id.into(),
             role,
             email,
             hashed_password,

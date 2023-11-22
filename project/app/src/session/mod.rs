@@ -3,8 +3,6 @@ mod repository;
 mod seconds;
 mod service;
 
-use std::num::NonZeroI32;
-
 use anyhow::Context;
 
 pub use params::{SessionTTL, SessionsMaxNumber};
@@ -15,13 +13,13 @@ pub use service::{
     ValidateSessionException,
 };
 
-use crate::{user::User, Ref};
+use crate::{user::User, Ref, SerialId};
 
 pub type DynSessionRepository = Box<dyn SessionRepository + Send + Sync>;
 
 #[derive(Debug, Hash, Clone)]
 pub struct Session {
-    pub user_id: Ref<NonZeroI32, User>,
+    pub user_id: Ref<SerialId, User>,
     pub expires_at: SecondsFromUnixEpoch,
     pub metadata: String,
     pub refresh_token: String,
@@ -29,7 +27,7 @@ pub struct Session {
 
 impl Session {
     pub fn new(
-        id: NonZeroI32,
+        id: SerialId,
         metadata: String,
         refresh_token: String,
         ttl: Seconds,

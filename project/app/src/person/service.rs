@@ -1,6 +1,4 @@
-use std::num::NonZeroI32;
-
-use crate::{ports::EntityNotFoundError, Outcome};
+use crate::{ports::EntityNotFoundError, Outcome, SerialId};
 
 use super::{DynPersonRepository, Person};
 
@@ -10,7 +8,7 @@ pub enum CreatePersonException {}
 #[derive(Debug, thiserror::Error)]
 #[error("person {id} does not exist")]
 pub struct PersonDoesNotExistError {
-    id: NonZeroI32,
+    id: SerialId,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -32,7 +30,7 @@ impl PersonService {
         }
     }
 
-    pub async fn get(self, id: NonZeroI32) -> Outcome<Person, GetPersonException> {
+    pub async fn get(self, id: SerialId) -> Outcome<Person, GetPersonException> {
         let person = self
             .repo
             .find_by_id(id)

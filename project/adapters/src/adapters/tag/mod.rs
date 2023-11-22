@@ -1,6 +1,6 @@
 mod model;
 
-use std::{num::NonZeroI32, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use super::ProvideTxn;
@@ -8,7 +8,7 @@ use crate::pg::PgTransaction;
 use app::{
     ports::{EntityAlreadyExistError, EntityDoesNotExistError, UniqualValueError},
     tag::Tag,
-    Outcome,
+    Outcome, SerialId,
 };
 use model::PgTag;
 
@@ -39,7 +39,7 @@ impl app::ports::TagRepository for PgTagRepository {
         .await
     }
 
-    async fn update_name(&self, id: NonZeroI32, name: String) -> Outcome<Tag, UniqualValueError> {
+    async fn update_name(&self, id: SerialId, name: String) -> Outcome<Tag, UniqualValueError> {
         self.fetch_optional(sqlx::query_as!(
             PgTag,
             "
@@ -50,12 +50,12 @@ impl app::ports::TagRepository for PgTagRepository {
                   RETURNING *;
             ",
             &name,
-            id.get(),
+            id,
         ))
         .await
     }
 
-    async fn delete(&self, id: NonZeroI32) -> Outcome<Tag, EntityDoesNotExistError> {
+    async fn delete(&self, id: SerialId) -> Outcome<Tag, EntityDoesNotExistError> {
         self.fetch_optional(sqlx::query_as!(
             PgTag,
             "
@@ -64,7 +64,7 @@ impl app::ports::TagRepository for PgTagRepository {
                     WHERE id = $1
                   RETURNING *;
             ",
-            id.get(),
+            id,
         ))
         .await
     }

@@ -1,10 +1,9 @@
 mod models;
 
 use anyhow::Context;
-use app::Outcome;
+use app::{Outcome, SerialId};
 use async_trait::async_trait;
 use std::convert::Infallible;
-use std::num::NonZeroI32;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -30,21 +29,18 @@ impl ProvideTxn for PgSessionRepository {
 
 #[async_trait]
 impl SessionRepository for PgSessionRepository {
-    async fn count_not_expired_by_user_id(
-        &self,
-        user_id: NonZeroI32,
-    ) -> Outcome<usize, Infallible> {
+    async fn count_not_expired_by_user_id(&self, user_id: SerialId) -> Outcome<usize, Infallible> {
         self.fetch_one(sqlx::query_as!(
             CountResult,
             r#"SELECT COUNT(*) as "count!" FROM user_sessions WHERE user_id = $1;"#,
-            user_id.get()
+            user_id
         ))
         .await
     }
 
     async fn find(
         &self,
-        user_id: NonZeroI32,
+        user_id: SerialId,
         metadata: &str,
     ) -> Outcome<Session, EntityNotFoundError> {
         self.fetch_optional(sqlx::query_as!(
@@ -54,7 +50,7 @@ impl SessionRepository for PgSessionRepository {
                     FROM user_sessions
                     WHERE user_id = $1 and metadata = $2;
             ",
-            user_id.get(),
+            user_id,
             &metadata
         ))
         .await
@@ -73,7 +69,7 @@ impl SessionRepository for PgSessionRepository {
                     ON CONFLICT DO NOTHING
                     RETURNING *;
             ",
-            session.user_id.get(),
+            *session.user_id,
             &session.metadata,
             &session.refresh_token,
             expires_at,
@@ -97,7 +93,7 @@ impl SessionRepository for PgSessionRepository {
                         user_id = $1 AND metadata = $2
                     RETURNING *;
             ",
-            session.user_id.get(),
+            *session.user_id,
             &session.metadata,
             &session.refresh_token,
             expires_at,
@@ -105,7 +101,7 @@ impl SessionRepository for PgSessionRepository {
         .await
     }
 
-    async fn delete_all(&self, user_id: NonZeroI32) -> Outcome<Vec<Session>, Infallible> {
+    async fn delete_all(&self, user_id: SerialId) -> Outcome<Vec<Session>, Infallible> {
         self.fetch_all(sqlx::query_as!(
             PgSession,
             "
@@ -114,14 +110,14 @@ impl SessionRepository for PgSessionRepository {
                     WHERE user_id = $1
                     RETURNING *;
             ",
-            user_id.get(),
+            user_id,
         ))
         .await
     }
 
     async fn delete(
         &self,
-        user_id: NonZeroI32,
+        user_id: SerialId,
         metadata: &str,
     ) -> Outcome<Session, EntityDoesNotExistError> {
         self.fetch_optional(sqlx::query_as!(
@@ -132,7 +128,7 @@ impl SessionRepository for PgSessionRepository {
                     WHERE user_id = $1 AND metadata = $2
                     RETURNING *;
             ",
-            user_id.get(),
+            user_id,
             metadata,
         ))
         .await

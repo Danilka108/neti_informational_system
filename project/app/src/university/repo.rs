@@ -1,8 +1,6 @@
-use std::num::NonZeroI32;
-
 use crate::{
     ports::{EntityAlreadyExistError, EntityDoesNotExistError, EntityNotFoundError},
-    Outcome,
+    Outcome, SerialId,
 };
 
 use super::University;
@@ -14,7 +12,7 @@ pub trait UniversityRepository {
         university: University<()>,
     ) -> Outcome<University, EntityAlreadyExistError>;
 
-    async fn delete(&self, id: NonZeroI32) -> Outcome<University, EntityDoesNotExistError>;
+    async fn delete(&self, id: SerialId) -> Outcome<University, EntityDoesNotExistError>;
 
-    async fn get(&self, id: NonZeroI32) -> Outcome<University, EntityNotFoundError>;
+    async fn get(&self, id: SerialId) -> Outcome<University, EntityNotFoundError>;
 }

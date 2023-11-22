@@ -55,6 +55,8 @@ impl<I, E> Deref for Ref<I, E> {
     }
 }
 
+pub type SerialId = i32;
+
 pub trait AdaptersModule:
     Module
     + Provide<SessionTTL>
@@ -84,14 +86,6 @@ impl<A> AppModule<A> {
         Self { adapters }
     }
 }
-
-// impl<A> std::ops::Deref for AppModule<A> {
-//     type Target = A;
-
-//     fn deref(&self) -> &Self::Target {
-//         &self.adapters
-//     }
-// }
 
 impl<A> Module for AppModule<A> {}
 
