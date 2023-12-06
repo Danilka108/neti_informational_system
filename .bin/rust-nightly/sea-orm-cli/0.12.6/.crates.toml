@@ -1,0 +1,5 @@
+[v1]
+"sea-orm-cli 0.12.6 (registry+https://github.com/rust-lang/crates.io-index)" = [
+    "sea",
+    "sea-orm-cli",
+]

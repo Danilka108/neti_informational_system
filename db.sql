@@ -22,22 +22,23 @@ CREATE TABLE persons
 (
     id serial
         PRIMARY KEY,
-    email varchar(255) NOT NULL
-        UNIQUE,
-    role user_role NOT NULL,
-    hashed_password text NOT NULL
+    name varchar(255) NOT NULL,
+    -- email varchar(255) NOT NULL
+    --     UNIQUE,
+    -- hashed_password text NOT NULL
+    -- role user_role NOT NULL,
 );
 
-CREATE TABLE person_sessions
-(
-    person_id serial NOT NULL references persons,
-    metadata varchar(1024) NOT NULL,
-    refresh_token varchar(1024) NOT NULL
-        UNIQUE,
-    expires_at_in_seconds integer NOT NULL,
+-- CREATE TABLE person_sessions
+-- (
+--     person_id serial NOT NULL references persons,
+--     metadata varchar(1024) NOT NULL,
+--     refresh_token varchar(1024) NOT NULL
+--         UNIQUE,
+--     expires_at_in_seconds integer NOT NULL,
 
-    PRIMARY KEY (person_id, metadata)
-);
+--     PRIMARY KEY (person_id, metadata)
+-- );
 
 -- CREATE TABLE users
 -- (
@@ -76,8 +77,8 @@ create table subdivision_attributes
 create table subdivisions
 (
   id serial primary key,
-  university_id serial not null references universities,
   name varchar(256) not null,
+  university_id serial not null references universities,
 
   unique (university_id, name)
 );
@@ -111,7 +112,8 @@ create table study_groups
 
 create table students
 (
-  id serial primary key references persons
+  id serial primary key,
+  person_id serial unique not null references persons
 );
 
 create table study_groups_students
@@ -124,7 +126,8 @@ create table study_groups_students
 
 create table teachers
 (
-  id serial primary key references persons,
+  id serial primary key,
+  person_id serial unique not null references persons,
   kind teacher_kind NOT NULL,
   department_id serial NOT NULL references subdivisions
 );

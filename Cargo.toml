@@ -1,0 +1,16 @@
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace]
+resolver = "2"
+
+members = [
+  "./crates/api",
+  # "./crates/models/lib_base",
+  # "./crates/models/lib_base_derive",
+  # "./crates/models/lib_models",
+  # "./crates/lib_common",
+]
+
+[workspace.metadata.bin]
+sea-orm-cli = { version = "0.12.6" }

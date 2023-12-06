@@ -1,0 +1,18 @@
+[package]
+name = "lib_base"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lib_base_derive = { path = "../../../crates/models/lib_base_derive" }
+lib_common = { path = "../../../crates/lib_common" }
+
+sqlx = { version = "0.7" }
+sea-query = { version = "0.30" }
+sea-query-binder = { version = "0.5" }
+modql = { version = "0.3.4", features = ["with-sea-query"] }
+
+[lints]
+workspace = true
