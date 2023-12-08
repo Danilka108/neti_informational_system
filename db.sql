@@ -24,8 +24,8 @@ CREATE TABLE persons
         PRIMARY KEY,
     email varchar(255) NOT NULL
         UNIQUE,
-    role user_role NOT NULL,
     hashed_password text NOT NULL
+    -- role user_role NOT NULL,
 );
 
 CREATE TABLE person_sessions

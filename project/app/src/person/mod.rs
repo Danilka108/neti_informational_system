@@ -1,23 +1,60 @@
-mod repository;
-mod service;
+use di::Provide;
 
-pub use repository::PersonRepository;
-pub use service::{
-    CreatePersonException, GetPersonException, PersonDoesNotExistError, PersonService,
-};
+use crate::{base_repo::BaseRepo, AdaptersModule, AppModule, EntityTrait, FieldTrait};
 
-use crate::SerialId;
-pub type DynPersonRepository = Box<dyn PersonRepository + Send + Sync>;
+mod create;
+mod delete;
+mod get;
 
-#[derive(Debug, Clone, Copy, Hash)]
-pub struct Person<Id = SerialId> {
+pub type Id = crate::Id<Entity>;
+
+#[derive(Debug)]
+pub struct Entity {
     pub id: Id,
+    pub name: String,
 }
 
-impl PartialEq for Person {
-    fn eq(&self, other: &Self) -> bool {
-        self.id.eq(&other.id)
+pub enum Field {
+    Id,
+    Name,
+}
+
+#[async_trait::async_trait]
+pub trait Repo: BaseRepo<Entity> {}
+
+pub type BoxedRepo = Box<dyn Repo>;
+
+pub struct Service {
+    repo: BoxedRepo,
+}
+
+impl<A: AdaptersModule> Provide<Service> for AppModule<A> {
+    fn provide(&self) -> Service {
+        Service {
+            repo: self.adapters.resolve(),
+        }
     }
 }
 
-impl Eq for Person {}
+impl EntityTrait for Entity {
+    const NAME: &'static str = "university";
+
+    type Field = Field;
+    type IdValue = i32;
+
+    fn get_field_value(&self, field: Self::Field) -> String {
+        match field {
+            Field::Id => self.id.value.to_string(),
+            Field::Name => self.name.clone(),
+        }
+    }
+}
+
+impl FieldTrait for Field {
+    fn name(&self) -> &'static str {
+        match self {
+            Self::Id => "id",
+            Self::Name => "name",
+        }
+    }
+}

@@ -1,43 +1,75 @@
-pub mod exceptions;
-mod repositories;
-pub mod service;
+use di::{Module, Provide};
 
-use crate::{person::Person, tag::Tag, university::University, SerialId};
+use crate::{
+    base_repo::{BaseRepo, BaseRepoException},
+    university, AdaptersModule, AppModule, EntityTrait, FieldTrait, Outcome,
+};
 
-pub use repositories::SubdivisionRepository;
-pub type BoxedSubdivisionRepository = Box<dyn SubdivisionRepository>;
-pub type BoxedSubdivisionMemberRepository = Box<dyn SubdivisionMemberRepository>;
-pub type BoxedSubdivisionTagRepository = Box<dyn SubdivisionTagRepository>;
-pub use self::repositories::{SubdivisionMemberRepository, SubdivisionTagRepository};
+mod create;
+mod delete;
+mod get;
+mod get_by_university;
 
-#[derive(Debug, Clone)]
-pub struct Subdivision<Id = SerialId> {
+pub type Id = crate::Id<Entity>;
+
+#[derive(Debug)]
+pub struct Entity {
     pub id: Id,
     pub name: String,
-    pub university: University,
+    pub university_id: university::Id,
 }
 
-impl PartialEq for Subdivision {
-    fn eq(&self, other: &Self) -> bool {
-        self.id.eq(&other.id)
+pub enum Field {
+    Id,
+    Name,
+    UniversityId,
+}
+
+impl EntityTrait for Entity {
+    const NAME: &'static str = "university";
+
+    type Field = Field;
+    type IdValue = i32;
+
+    fn get_field_value(&self, field: Self::Field) -> String {
+        match field {
+            Field::Id => self.id.value.to_string(),
+            Field::Name => self.name.clone(),
+            Field::UniversityId => self.university_id.value.to_string(),
+        }
     }
 }
 
-impl Eq for Subdivision {}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SubdivisionTag(pub Subdivision, pub Tag);
-
-#[derive(Debug, Clone)]
-pub struct SubdivisionMember {
-    pub id: (Subdivision, Person),
-    pub role: String,
-}
-
-impl PartialEq for SubdivisionMember {
-    fn eq(&self, other: &Self) -> bool {
-        self.id.eq(&other.id)
+impl FieldTrait for Field {
+    fn name(&self) -> &'static str {
+        match self {
+            Self::Id => "id",
+            Self::Name => "name",
+            Self::UniversityId => "university_id",
+        }
     }
 }
 
-impl Eq for SubdivisionMember {}
+#[async_trait::async_trait]
+pub trait Repo: BaseRepo<Entity> {
+    async fn list_by_university(
+        &self,
+        university_id: university::Id,
+    ) -> Outcome<Vec<Entity>, BaseRepoException<Entity>>;
+}
+
+pub type BoxedRepo = Box<dyn Repo>;
+
+pub struct Service {
+    repo: BoxedRepo,
+    university_service: university::Service,
+}
+
+impl<A: AdaptersModule> Provide<Service> for AppModule<A> {
+    fn provide(&self) -> Service {
+        Service {
+            repo: self.adapters.resolve(),
+            university_service: self.resolve(),
+        }
+    }
+}
