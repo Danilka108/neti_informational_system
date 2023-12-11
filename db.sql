@@ -67,10 +67,9 @@ create table universities
   name varchar(256) not null UNIQUE
 );
 
-create table subdivision_attributes
+create table tags
 (
-  id serial primary key,
-  name varchar(128) unique not null
+  name varchar(128) primary key
 );
 
 create table subdivisions
@@ -82,12 +81,12 @@ create table subdivisions
   unique (university_id, name)
 );
 
-create table subdivisions_attributes
+create table subdivisions_tags
 (
-  attribute_id serial not null references subdivision_attributes,
+  tag_name varchar(128) not null references tags,
   subdivision_id serial not null references subdivisions,
 
-  primary key (attribute_id, subdivision_id)
+  primary key (tag_name, subdivision_id)
 );
 
 create table subdivision_members

@@ -1,75 +1,168 @@
-use di::{Module, Provide};
+mod ex;
+mod repo;
 
-use crate::{
-    base_repo::{BaseRepo, BaseRepoException},
-    university, AdaptersModule, AppModule, EntityTrait, FieldTrait, Outcome,
+use crate::{person, tag, university, AdaptersModule, AppModule};
+use utils::{
+    entity::{entity, entity_method, LazyAttr, ProvideId},
+    outcome::Outcome,
 };
 
-mod create;
-mod delete;
-mod get;
-mod get_by_university;
+pub use ex::Exception;
+pub use repo::{BoxedRepo, Repo};
 
-pub type Id = crate::Id<Entity>;
-
-#[derive(Debug)]
+#[entity]
+#[derive(Clone)]
 pub struct Entity {
-    pub id: Id,
+    #[id]
+    pub id: i32,
     pub name: String,
-    pub university_id: university::Id,
+    pub university_id: university::EntityId,
+    pub tags: LazyAttr,
+    pub members: LazyAttr,
 }
 
-pub enum Field {
-    Id,
-    Name,
-    UniversityId,
+pub struct Member {
+    pub person_id: person::EntityId,
+    pub role: String,
 }
 
-impl EntityTrait for Entity {
-    const NAME: &'static str = "university";
+impl Entity {
+    #[entity_method(ctx)]
+    pub async fn create<A: AdaptersModule>(
+        ctx: AppModule<A>,
+        name: String,
+        university_id: university::EntityId,
+    ) -> Outcome<Self, Exception> {
+        let mut repo = ctx.adapters.resolve::<BoxedRepo>();
 
-    type Field = Field;
-    type IdValue = i32;
+        let entity = Entity {
+            id: Default::default(),
+            tags: Default::default(),
+            members: Default::default(),
+            name,
+            university_id,
+        };
 
-    fn get_field_value(&self, field: Self::Field) -> String {
-        match field {
-            Field::Id => self.id.value.to_string(),
-            Field::Name => self.name.clone(),
-            Field::UniversityId => self.university_id.value.to_string(),
-        }
+        repo.insert(entity).await.map_repo_ex()
     }
-}
 
-impl FieldTrait for Field {
-    fn name(&self) -> &'static str {
-        match self {
-            Self::Id => "id",
-            Self::Name => "name",
-            Self::UniversityId => "university_id",
-        }
+    #[entity_method(ctx)]
+    pub async fn get<A: AdaptersModule>(
+        ctx: AppModule<A>,
+        id: impl ProvideId<Self> + Send + Sync,
+    ) -> Outcome<Self, Exception> {
+        let repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.find(id.provide_id()).await.map_repo_ex()
     }
-}
 
-#[async_trait::async_trait]
-pub trait Repo: BaseRepo<Entity> {
-    async fn list_by_university(
-        &self,
-        university_id: university::Id,
-    ) -> Outcome<Vec<Entity>, BaseRepoException<Entity>>;
-}
+    #[entity_method(ctx)]
+    pub async fn list_by_university<A: AdaptersModule>(
+        ctx: AppModule<A>,
+        university_id: impl ProvideId<university::Entity> + Send + Sync,
+    ) -> Outcome<Vec<Entity>, Exception> {
+        let repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.list_by_university(university_id.provide_id())
+            .await
+            .map_repo_ex()
+    }
 
-pub type BoxedRepo = Box<dyn Repo>;
+    #[entity_method(ctx)]
+    pub async fn update<A: AdaptersModule>(self, ctx: AppModule<A>) -> Outcome<Self, Exception> {
+        let mut repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.update(self).await.map_repo_ex()
+    }
 
-pub struct Service {
-    repo: BoxedRepo,
-    university_service: university::Service,
-}
+    #[entity_method(ctx)]
+    pub async fn delete<A: AdaptersModule>(self, ctx: AppModule<A>) -> Outcome<Self, Exception> {
+        let mut repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.delete(&self.id).await.map_repo_ex()
+    }
 
-impl<A: AdaptersModule> Provide<Service> for AppModule<A> {
-    fn provide(&self) -> Service {
-        Service {
-            repo: self.adapters.resolve(),
-            university_service: self.resolve(),
-        }
+    #[entity_method(ctx)]
+    pub async fn add_tag<A: AdaptersModule>(
+        self,
+        ctx: AppModule<A>,
+        tag_id: impl ProvideId<tag::Entity> + Send + Sync,
+    ) -> Outcome<tag::Entity, Exception> {
+        let mut repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.add_tag(&self.id, tag_id.provide_id())
+            .await
+            .map_repo_ex()
+    }
+
+    #[entity_method(ctx)]
+    pub async fn remove_tag<A: AdaptersModule>(
+        self,
+        ctx: AppModule<A>,
+        tag_id: impl ProvideId<tag::Entity> + Send + Sync,
+    ) -> Outcome<tag::Entity, Exception> {
+        let mut repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.remove_tag(&self.id, tag_id.provide_id())
+            .await
+            .map_repo_ex()
+    }
+
+    #[entity_method(ctx)]
+    pub async fn get_tag<A: AdaptersModule>(
+        self,
+        ctx: AppModule<A>,
+        tag_id: impl ProvideId<tag::Entity> + Send + Sync,
+    ) -> Outcome<tag::Entity, Exception> {
+        let repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.find_tag(&self.id, tag_id.provide_id())
+            .await
+            .map_repo_ex()
+    }
+
+    #[entity_method(ctx)]
+    pub async fn get_tags<A: AdaptersModule>(
+        self,
+        ctx: AppModule<A>,
+    ) -> Outcome<Vec<tag::Entity>, Exception> {
+        let repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.list_tags(&self.id).await.map_repo_ex()
+    }
+
+    #[entity_method(ctx)]
+    pub async fn add_member<A: AdaptersModule>(
+        self,
+        ctx: AppModule<A>,
+        member: Member,
+    ) -> Outcome<Member, Exception> {
+        let mut repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.add_member(&self.id, member).await.map_repo_ex()
+    }
+
+    #[entity_method(ctx)]
+    pub async fn remove_member<A: AdaptersModule>(
+        self,
+        ctx: AppModule<A>,
+        person_id: impl ProvideId<person::Entity> + Send + Sync,
+    ) -> Outcome<Member, Exception> {
+        let mut repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.remove_member(&self.id, person_id.provide_id())
+            .await
+            .map_repo_ex()
+    }
+
+    #[entity_method(ctx)]
+    pub async fn get_member<A: AdaptersModule>(
+        self,
+        ctx: AppModule<A>,
+        person_id: impl ProvideId<person::Entity> + Send + Sync,
+    ) -> Outcome<Member, Exception> {
+        let repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.find_member(&self.id, person_id.provide_id())
+            .await
+            .map_repo_ex()
+    }
+
+    #[entity_method(ctx)]
+    pub async fn get_members<A: AdaptersModule>(
+        self,
+        ctx: AppModule<A>,
+    ) -> Outcome<Vec<Member>, Exception> {
+        let repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.list_members(&self.id).await.map_repo_ex()
     }
 }

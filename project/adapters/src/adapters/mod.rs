@@ -8,7 +8,7 @@ use sqlx::{
 };
 use tokio::sync::Mutex;
 
-use crate::pg::PgTransaction;
+use crate::{pg::PgTransaction, transaction::TransactionModule};
 
 pub mod password;
 pub mod person;

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-thiserror.workspace = true
-anyhow.workspace = true
-async-trait.workspace = true
-di = { path = "../di" }
+thiserror = { version = "1.0.49" }
+anyhow = { version = "1.0.75" }
+async-trait = { version = "0.1.73" }
+utils = { path = "../../project/utils" }

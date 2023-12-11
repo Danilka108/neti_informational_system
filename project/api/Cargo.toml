@@ -8,9 +8,10 @@ thiserror.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
 
-di = { path = "../di/" }
+# di = { path = "../di/" }
 adapters = { path = "../adapters/" }
 app = { path = "../app" }
+utils = { path = "../utils/" }
 
 tokio = { version = "1.32.0", features = ["full"] }
 http = { version = "0.2.9" }

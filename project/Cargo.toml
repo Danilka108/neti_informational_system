@@ -3,9 +3,10 @@ resolver = "2"
 
 members = [
     "app",
-    "api",
-    "di",
-    "adapters",
+    "utils",
+    "utils_macros",
+    # "adapters",
+  # "api",
 ]
 
 [workspace.dependencies]

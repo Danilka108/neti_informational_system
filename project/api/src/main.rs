@@ -1,12 +1,29 @@
 #![feature(iterator_try_collect)]
 #![feature(try_trait_v2)]
 
+use config::ConfigModule;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 mod api_state;
 mod config;
 mod handlers;
 mod utils;
+
+fn test() {
+    let a = app::subdivision::Entity {
+        id: Default::default(),
+        name: "".into(),
+        university_id: Default::default(),
+        tags: utils::entity::LazyAttr,
+        members: utils::entity::LazyAttr,
+    };
+    let t: adapters::transaction::TransactionModule<ConfigModule> = todo!();
+    let a = a.tags(&0.into_id()).exec(t).await;
+    match a {
+        ::utils::outcome::Outcome::Ok(_) => (),
+        _ => (),
+    }
+}
 
 #[tokio::main]
 async fn main() {
