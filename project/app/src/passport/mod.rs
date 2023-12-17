@@ -1,26 +1,42 @@
 use utils::{
     entity::{entity_method, ProvideId},
     outcome::Outcome,
-    repo::BaseRepo,
+    repo::{self, BaseRepo},
 };
 
 use crate::{user, AdaptersModule, AppModule};
 
-use self::exception::Exception;
-
 mod exception;
+mod number;
+
+pub use exception::Exception;
+pub use number::{
+    InvalidPassportNumberError, InvalidPassportSeriesError, PassportNumber, PassportSeries,
+};
 
 #[utils::entity::entity]
 pub struct Entity {
     #[id]
     pub id: i32,
-    pub user_id: user::EntityId,
+    pub person_id: user::EntityId,
+    pub first_name: String,
+    pub last_name: String,
+    pub partonymic: String,
+    pub date_of_birth: time::Date,
+    pub date_of_issue: time::Date,
+    pub number: PassportNumber,
+    pub series: PassportSeries,
 }
 
 pub type BoxedRepo = Box<dyn Repo + Send + Sync>;
 
 #[async_trait::async_trait]
-pub trait Repo: BaseRepo<Entity> {}
+pub trait Repo: BaseRepo<Entity> {
+    async fn list_by_person(
+        &self,
+        person_id: &user::EntityId,
+    ) -> Outcome<Vec<Entity>, repo::ex::Exception<Entity>>;
+}
 
 impl Entity {
     #[entity_method(ctx)]
@@ -36,6 +52,17 @@ impl Entity {
     ) -> Outcome<Self, Exception> {
         let repo = ctx.adapters.resolve::<BoxedRepo>();
         repo.find(id.provide_id()).await.map_repo_ex()
+    }
+
+    #[entity_method(ctx)]
+    pub async fn list_by_person<A: AdaptersModule>(
+        ctx: AppModule<A>,
+        person_id: impl ProvideId<user::Entity> + Send + Sync,
+    ) -> Outcome<Vec<Entity>, Exception> {
+        let repo = ctx.adapters.resolve::<BoxedRepo>();
+        repo.list_by_person(person_id.provide_id())
+            .await
+            .map_repo_ex()
     }
 
     #[entity_method(ctx)]

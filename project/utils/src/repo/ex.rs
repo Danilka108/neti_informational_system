@@ -85,6 +85,12 @@ where
                 E::NAME,
                 self.fields_to_debug(),
             ),
+            Kind::CheckConstraintViolation => write!(
+                f,
+                "check constraint violation of {} entity (check constraint of the set of fields {:?} violated)",
+                E::NAME,
+                self.fields_to_debug(),
+            ),
         }
     }
 }
@@ -97,6 +103,7 @@ pub(crate) enum Kind {
     AlreadyExist,
     UniqueConstraintViolation,
     RefConstraintViolation,
+    CheckConstraintViolation,
 }
 
 impl<E: EntityTrait> Exception<E> {
@@ -141,6 +148,17 @@ impl<E: EntityTrait> Exception<E> {
         Self {
             kind: Kind::RefConstraintViolation,
             fields: ref_fields.into_iter().collect(),
+        }
+    }
+
+    /// Use if check constraint of the set of fields 'check_fields' violated
+    pub fn check_constraint_violation<F>(check_fields: F) -> Self
+    where
+        F: IntoIterator<Item = E::Attr>,
+    {
+        Self {
+            kind: Kind::CheckConstraintViolation,
+            fields: check_fields.into_iter().collect(),
         }
     }
 }

@@ -129,6 +129,16 @@ impl<S, E: Send + Sync + std::error::Error + 'static> Outcome<S, E> {
     }
 }
 
+impl<Ok, Ex> Outcome<Ok, Ex> {
+    pub fn into_result(self) -> Result<Result<Ok, Ex>, anyhow::Error> {
+        match self {
+            Self::Ok(ok) => Ok(Ok(ok)),
+            Self::Ex(ex) => Ok(Err(ex)),
+            Self::Error(err) => Err(err),
+        }
+    }
+}
+
 // impl<S, E> From<anyhow::Error> for Outcome<S, E> {
 //     fn from(value: anyhow::Error) -> Self {
 //         Outcome::Error(value)

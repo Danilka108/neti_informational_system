@@ -17,6 +17,10 @@ pub enum Exception {
     TagDoesNotFound,
     #[error("the tag already exists for the subdivision")]
     TagAlreadyExist,
+    #[error("the subdivision does not have the member")]
+    MemberDoesNotFound,
+    #[error("the tag already exists for the member")]
+    MemberAlreadyExist,
 }
 
 impl FromRepoEx<Entity> for Exception {
@@ -61,6 +65,20 @@ impl FromRepoEx<Entity> for Exception {
             .eq_to(&repo_ex)
         {
             return Exception::TagAlreadyExist.into();
+        }
+
+        if Case::does_not_exist()
+            .with_fields([EntityAttr::Members])
+            .eq_to(&repo_ex)
+        {
+            return Exception::MemberDoesNotFound.into();
+        }
+
+        if Case::unique_constraint_violated()
+            .with_fields([EntityAttr::Members])
+            .eq_to(&repo_ex)
+        {
+            return Exception::MemberAlreadyExist.into();
         }
 
         None

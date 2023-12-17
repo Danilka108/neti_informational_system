@@ -36,6 +36,14 @@ impl Case<Undefined, Undefined> {
             _marker: PhantomData,
         }
     }
+
+    pub fn check_constraint_violated<Entity>() -> Case<Entity, Undefined> {
+        Case {
+            kind: Kind::CheckConstraintViolation,
+            fields: Undefined,
+            _marker: PhantomData,
+        }
+    }
 }
 
 impl<Entity: EntityTrait> Case<Entity, Undefined> {

@@ -299,6 +299,11 @@ fn transform_sig(cxt_arg_name: String, sig: &mut Signature) -> ((Ident, Box<Type
     //             Self: #(#bounds +)* 'entity_method_future
     //         });
     // }
+    where_clause_or_default(&mut sig.generics.where_clause)
+        .predicates
+        .push(parse_quote_spanned! {default_span=>
+            Self: 'entity_method_future + 'entity_method
+        });
 
     let mut ctx_arg = None;
     let mut fitlered_inputs = Punctuated::new();

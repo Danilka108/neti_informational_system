@@ -6,19 +6,35 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-thiserror.workspace = true
-anyhow.workspace = true
-async-trait.workspace = true
-# di = { path = "../di/" }
-utils = { path = "../utils" }
+thiserror = { version = "1.0.49" }
+anyhow = { version = "1.0.75" }
+async-trait = { version = "0.1.73" }
+utils = { path = "../../project/utils", features = ["sqlx"] }
 app = { path = "../app" }
 serde = { version = "1.0.188", features = ["derive"] }
 tokio = { version = "1.32.0", features = ["full"] }
+
 tracing = { version = "0.1.37", features = ["attributes"] }
-jsonwebtoken = { version = "8.3.0" }
-sqlx = { version = "0.7.1", features = ["postgres", "runtime-tokio", "macros"] }
-nanoid = { version = "0.4.0" }
+log = { version = "0.4.20", features = ["serde"] }
+
 argon2 = { version = "0.5.2", features = ["std", "alloc", "password-hash"] }
 password-hash = { version = "0.5.0" }
 rand = { version = "0.8.5", features = ["std_rng"] }
-log = { version = "0.4.20", features = ["serde"] }
+
+sqlx = { version = "0.7", features = [ "runtime-tokio", "postgres", "uuid" ] }
+sea-query = { version = "0.30", features = [ "derive", "attr" ]}
+# sea-query-binder = { version = "0.5", features = ["sqlx-postgres", "with-uuid", "with-time" ] }
+sea-query-binder = { version = "0.5", features = ["sqlx-postgres", "with-time" ] }
+modql = {version = "0.3.4", features = ["with-sea-query"]}
+
+# thiserror.workspace = true
+# anyhow.workspace = true
+# async-trait.workspace = true
+# # di = { path = "../di/" }
+# utils = { path = "../utils" }
+# jsonwebtoken = { version = "8.3.0" }
+# nanoid = { version = "0.4.0" }
+# argon2 = { version = "0.5.2", features = ["std", "alloc", "password-hash"] }
+# password-hash = { version = "0.5.0" }
+# rand = { version = "0.8.5", features = ["std_rng"] }
+# log = { version = "0.4.20", features = ["serde"] }

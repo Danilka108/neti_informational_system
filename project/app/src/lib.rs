@@ -1,25 +1,29 @@
 use utils::di::{Module, Provide};
 
+mod auth_service;
+pub mod passport;
 pub mod person;
 pub mod subdivision;
 pub mod tag;
+pub mod token;
 pub mod university;
+pub mod user;
 
 pub trait AdaptersModule:
     Send
     + Module
-    + Provide<person::BoxedRepo>
-    + Provide<person::BoxedPasswordHasher>
+    + Provide<user::BoxedRepo>
+    + Provide<user::BoxedPasswordHasher>
+    + Provide<user::SessionTTL>
+    + Provide<user::SessionsMaxNumber>
     + Provide<university::BoxedRepo>
     + Provide<subdivision::BoxedRepo>
     + Provide<tag::BoxedRepo>
-// + Provide<SessionTTL>
-// + Provide<SessionsMaxNumber>
-// + Provide<DynSessionRepository>
-// + Provide<DynPasswordHasher>
-// + Provide<AccessTokenTTL>
-// + Provide<DynAccessTokenEngine>
-// + Provide<DynRefreshTokenGenerator>
+    + Provide<passport::BoxedRepo>
+    + Provide<person::BoxedRepo>
+    + Provide<token::BoxedAccessTokenEngine>
+    + Provide<token::BoxedRefreshTokenGenerator>
+    + Provide<token::AccessTokenTTL>
 {
 }
 

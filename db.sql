@@ -18,48 +18,42 @@ CREATE TYPE training_kind AS enum ('FULL_TIME', 'CORRESPONDENCE');
 
 CREATE TYPE attestation_kind AS enum ('TEST', 'DIFF_TEST', 'EXAM');
 
-CREATE TABLE persons
-(
-    id serial
-        PRIMARY KEY,
-    email varchar(255) NOT NULL
-        UNIQUE,
-    hashed_password text NOT NULL
-    -- role user_role NOT NULL,
+create table users (
+  id serial primary key,
+  email varchar(255) not null unique,
+  password text not null
 );
 
-CREATE TABLE person_sessions
+CREATE TABLE user_sessions
 (
-    person_id serial NOT NULL references persons,
+    user_id serial NOT NULL references users,
     metadata varchar(1024) NOT NULL,
     refresh_token varchar(1024) NOT NULL
         UNIQUE,
     expires_at_in_seconds integer NOT NULL,
 
-    PRIMARY KEY (person_id, metadata)
+    PRIMARY KEY (user_id, metadata)
 );
 
--- CREATE TABLE users
--- (
---     id serial NOT NULL
---         PRIMARY KEY,
---     -- person_id serial not null references persons,
---     email varchar(255) NOT NULL
---         UNIQUE,
---     role user_role NOT NULL,
---     hashed_password text NOT NULL
--- );
+CREATE TABLE persons
+(
+    id serial
+        PRIMARY KEY,
+    user_id serial unique not null references users
+);
 
--- CREATE TABLE user_sessions
--- (
---     user_id serial NOT NULL references users,
---     metadata varchar(1024) NOT NULL,
---     refresh_token varchar(1024) NOT NULL
---         UNIQUE,
---     expires_at_in_seconds integer NOT NULL,
-
---     PRIMARY KEY (user_id, metadata)
--- );
+create table passports(
+  id serial primary key,
+  person_id serial not null REFERENCES persons,
+  first_name varchar(255) not null,
+  last_name varchar(255) not null,
+  patronymic varchar(255) not null,
+  date_of_birth timestamp not null,
+  date_of_issue timestamp not null,
+  number varchar not null,
+  series varchar not null,
+  gender gender not null
+);
 
 create table universities
 (

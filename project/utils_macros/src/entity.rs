@@ -18,8 +18,10 @@ pub fn impl_entity(mut ast: syn::ItemStruct, _args: TokenStream) -> TokenStream2
     };
 
     let mut id = None;
-    let mut enum_variants = Vec::new();
-    let mut enum_variants_impl = Vec::new();
+
+    let mut entity_attrs = Vec::new();
+    let mut entity_attrs_impl = Vec::new();
+    let mut entity_non_id_attrs = Vec::new();
 
     for field in fields {
         let field_name = field
@@ -29,12 +31,11 @@ pub fn impl_entity(mut ast: syn::ItemStruct, _args: TokenStream) -> TokenStream2
             .to_string()
             .to_case(Case::Snake);
 
-        let attr_enum_variant =
-            format_ident!("{}", field_name.to_string().to_case(Case::UpperCamel));
+        let entity_attr = format_ident!("{}", field_name.to_string().to_case(Case::UpperCamel));
 
-        enum_variants.push(quote! { #attr_enum_variant, });
-        enum_variants_impl.push(quote! {
-            Self::#attr_enum_variant => #field_name,
+        entity_attrs.push(quote! { #entity_attr, });
+        entity_attrs_impl.push(quote! {
+            Self::#entity_attr => #field_name,
         });
 
         let (id_attrs, non_id_attrs): (Vec<_>, Vec<_>) =
@@ -56,14 +57,16 @@ pub fn impl_entity(mut ast: syn::ItemStruct, _args: TokenStream) -> TokenStream2
         }
 
         if id_attrs.len() == 1 && id.is_none() {
-            id = Some((field.ident.clone(), field.ty.clone()));
+            id = Some((entity_attr, field.ident.clone(), field.ty.clone()));
             field.ty = parse_quote! { #id_alias_name };
+        } else {
+            entity_non_id_attrs.push(entity_attr);
         }
 
         field.attrs = non_id_attrs;
     }
 
-    let Some((id_ident, id_type)) = id else {
+    let Some((id_entity_attr, id_ident, id_type)) = id else {
         panic!("No field marked with #[id] found");
     };
 
@@ -72,15 +75,15 @@ pub fn impl_entity(mut ast: syn::ItemStruct, _args: TokenStream) -> TokenStream2
 
         #ast
 
-        #[derive(PartialEq)]
+        #[derive(::std::cmp::PartialEq, ::std::cmp::Eq, ::std::hash::Hash)]
         #vis enum #attr_enum_name {
-            #(#enum_variants)*
+            #(#entity_attrs)*
         }
 
         impl ::utils::entity::AttrTrait for #attr_enum_name {
             fn name(&self) -> &'static str {
                 match self {
-                    #(#enum_variants_impl)*
+                    #(#entity_attrs_impl)*
                 }
             }
         }
@@ -90,6 +93,14 @@ pub fn impl_entity(mut ast: syn::ItemStruct, _args: TokenStream) -> TokenStream2
 
             type Attr = #attr_enum_name;
             type IdValue = #id_type;
+
+            fn id_attr() -> Self::Attr {
+                #attr_enum_name::#id_entity_attr
+            }
+
+            fn non_id_attrs() -> Vec<Self::Attr> {
+                ::std::vec![#(#attr_enum_name::#entity_non_id_attrs),*]
+            }
         }
 
         impl ::utils::entity::ProvideId<#name> for #name {

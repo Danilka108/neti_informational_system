@@ -1,17 +1,14 @@
-use utils::repo::{case::Case, ex::FromRepoEx};
+use utils::repo::case::Case;
+use utils::repo::ex::FromRepoEx;
 
 use super::{Entity, EntityAttr};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Exception {
-    #[error("person does not exist")]
+    #[error("passport does not exist")]
     DoesNotExist,
-    #[error("email is already is use")]
-    EmailAlreadyInUse,
-    #[error("person already exist")]
-    AlreadyExist,
-    #[error("invalid person password")]
-    InvalidPassword,
+    #[error("passport already exists")]
+    AlreadyExists,
 }
 
 impl FromRepoEx<Entity> for Exception {
@@ -24,17 +21,10 @@ impl FromRepoEx<Entity> for Exception {
         }
 
         if Case::unique_constraint_violated()
-            .with_fields([EntityAttr::Email])
-            .eq_to(&repo_ex)
-        {
-            return Some(Exception::EmailAlreadyInUse);
-        }
-
-        if Case::unique_constraint_violated()
             .with_fields([EntityAttr::Id])
             .eq_to(&repo_ex)
         {
-            return Some(Exception::AlreadyExist);
+            return Some(Exception::AlreadyExists);
         }
 
         None
