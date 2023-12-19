@@ -1,6 +1,18 @@
 version: '3.4'
 
 services:
+  pgadmin:
+    image: 'dpage/pgadmin4'
+    restart: always
+    ports:
+      - "5050:80"
+    env_file:
+      - ./.env
+    networks:
+      - university_info_system
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
   pg_db:
     image: 'postgres:15-alpine'
     environment:
@@ -19,21 +31,22 @@ services:
     networks:
       - university_info_system
 
-  redis_db:
-    image: 'redis:7.2.1-alpine'
-    ports:
-      - "6379:6379"
-    restart: always
-    command: redis-server /usr/local/etc/redis.conf
-    volumes:
-      - ./redis.conf:/usr/local/etc/redis.conf
-      - redis_db_data:/var/lib/redis
-    networks:
-      - university_info_system
+  # redis_db:
+  #   image: 'redis:7.2.1-alpine'
+  #   ports:
+  #     - "6379:6379"
+  #   restart: always
+  #   command: redis-server /usr/local/etc/redis.conf
+  #   volumes:
+  #     - ./redis.conf:/usr/local/etc/redis.conf
+  #     - redis_db_data:/var/lib/redis
+  #   networks:
+  #     - university_info_system
 
 volumes:
   pg_db_data:
-  redis_db_data:
+  # redis_db_data:
+  pgadmin_data:
 
 networks:
   university_info_system:
