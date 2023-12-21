@@ -1,23 +1,18 @@
-use app::user;
+use app::{person, user};
 use sqlx::FromRow;
-use utils::entity::Id;
 
 #[derive(Clone, Debug, FromRow)]
 #[sea_query::enum_def]
 pub struct Persons {
     pub id: i32,
-    pub email: String,
-    pub password: String,
+    pub user_id: i32,
 }
 
-impl From<Persons> for user::Entity {
+impl From<Persons> for person::Entity {
     fn from(value: Persons) -> Self {
-        user::Entity {
-            id: Id::new(value.id),
-            email: value.email,
-            password: user::HashedPassword {
-                value: value.password,
-            },
+        person::Entity {
+            id: person::EntityId::new(value.id),
+            user_id: user::EntityId::new(value.user_id),
         }
     }
 }

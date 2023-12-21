@@ -2,7 +2,8 @@ use utils::{di::Provide, outcome::Outcome};
 
 use crate::{
     token::{self, BoxedAccessTokenEngine, BoxedRefreshTokenGenerator},
-    user::{self, SecondsFromUnixEpoch},
+    user,
+    user_session::{self, SecondsFromUnixEpoch},
     AdaptersModule, AppModule,
 };
 
@@ -10,6 +11,8 @@ use crate::{
 pub enum Exception {
     #[error(transparent)]
     UserException(#[from] user::Exception),
+    #[error(transparent)]
+    SessionException(#[from] user_session::Exception),
 }
 
 pub struct AuthService<A> {
@@ -56,9 +59,7 @@ impl<A: AdaptersModule + Clone + Sync> AuthService<A> {
             })
             .await?;
 
-        let session = user
-            .sessions()
-            .save(session_metadata, refresh_token)
+        let session = user_session::Entity::save(user.id(), session_metadata, refresh_token)
             .exec(self.ctx.clone())
             .await?;
 
@@ -89,11 +90,14 @@ impl<A: AdaptersModule + Clone + Sync> AuthService<A> {
             })
             .await?;
 
-        let session = user
-            .sessions()
-            .update(session_metadata, refresh_token_to_validate, refresh_token)
-            .exec(self.ctx.clone())
-            .await?;
+        let session = user_session::Entity::update(
+            user.id(),
+            session_metadata,
+            refresh_token_to_validate,
+            refresh_token,
+        )
+        .exec(self.ctx.clone())
+        .await?;
 
         Outcome::Ok(Tokens {
             access_token,
@@ -109,11 +113,10 @@ impl<A: AdaptersModule + Clone + Sync> AuthService<A> {
     ) -> Outcome<(), Exception> {
         let user = user::Entity::get(user_id).exec(self.ctx.clone()).await?;
 
-        let _deleted_session = user
-            .sessions()
-            .remove(session_metadata, refresh_token_to_validate)
-            .exec(self.ctx.clone())
-            .await?;
+        let _deleted_session =
+            user_session::Entity::remove(user.id(), session_metadata, refresh_token_to_validate)
+                .exec(self.ctx.clone())
+                .await?;
 
         Outcome::Ok(())
     }

@@ -4,7 +4,7 @@ mod refresh_token_generator;
 pub use access_token_engine::AccessTokenEngine;
 pub use refresh_token_generator::RefreshTokenGenerator;
 
-use crate::user::{Seconds, SecondsFromUnixEpoch};
+use crate::user_session::{Seconds, SecondsFromUnixEpoch};
 
 pub type BoxedAccessTokenEngine = Box<dyn AccessTokenEngine + Send + Sync>;
 pub type BoxedRefreshTokenGenerator = Box<dyn RefreshTokenGenerator + Send + Sync>;

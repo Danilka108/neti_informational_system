@@ -3,20 +3,21 @@ CREATE SCHEMA public;
 
 CREATE DOMAIN seconds_from_unix_epoch bigint CHECK (value > 0);
 
-CREATE TYPE gender AS ENUM ('MALE', 'FEMALE');
+CREATE TYPE gender AS ENUM ('male', 'female');
 
 CREATE FUNCTION is_numeric(text) RETURNS boolean AS
     'SELECT $1 ~ ''^[0-9]+$'' ' LANGUAGE 'sql';
 
-CREATE TYPE user_role AS ENUM ('ADMIN');
+-- CREATE TYPE user_role AS ENUM ('ADMIN');
 
 CREATE TYPE teacher_kind AS enum ('assistant', 'regular_teacher', 'senior_teacher', 'associate_professor', 'professor');
 
 CREATE TYPE qualification AS enum ('bachelor', 'master', 'postgraduate', 'doctorate');
 
-CREATE TYPE training_kind AS enum ('FULL_TIME', 'CORRESPONDENCE');
+CREATE TYPE training_kind AS enum ('full_time', 'correspondence');
 
-CREATE TYPE attestation_kind AS enum ('TEST', 'DIFF_TEST', 'EXAM');
+CREATE TYPE attestation_kind AS enum ('test', 'diff_test', 'exam');
+
 
 create table users (
   id serial primary key,
@@ -30,7 +31,7 @@ CREATE TABLE user_sessions
     metadata varchar(1024) NOT NULL,
     refresh_token varchar(1024) NOT NULL
         UNIQUE,
-    expires_at_in_seconds integer NOT NULL,
+    expires_at seconds_from_unix_epoch NOT NULL,
 
     PRIMARY KEY (user_id, metadata)
 );
@@ -50,8 +51,8 @@ create table passports(
   patronymic varchar(256) not null,
   date_of_birth timestamp not null,
   date_of_issue timestamp not null,
-  number varchar not null,
-  series varchar not null,
+  number varchar(6) not null,
+  series varchar(4) not null,
   gender gender not null
 );
 
@@ -86,8 +87,8 @@ create table subdivision_tags
 create table subdivision_members
 (
   -- id serial primary key,
-  subdivision_id serial NOT NULL REFERENCES subdivisions,
   person_id serial not null references persons,
+  subdivision_id serial NOT NULL REFERENCES subdivisions,
   role varchar(512) not null,
 
   primary key (subdivision_id, person_id)
@@ -133,7 +134,7 @@ create table curriculums
   name varchar(256) not null unique
 );
 
-create table study_groups_curriculums
+create table study_group_curriculums
 (
   study_group_id serial not null references study_groups,
   curriculum_id serial not null references curriculums,

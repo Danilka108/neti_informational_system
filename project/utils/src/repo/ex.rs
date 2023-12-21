@@ -36,13 +36,15 @@ struct DisplayableField<Entity: EntityTrait>(Entity::Attr);
 
 impl<Entity: EntityTrait> Display for DisplayableField<Entity> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0.name())
+        // write!(f, "{}", self.0.name())
+        write!(f, "")
     }
 }
 
 impl<E: EntityTrait> Exception<E> {
     fn fields_to_debug(&self) -> Vec<String> {
-        self.fields.iter().map(|f| f.name().to_owned()).collect()
+        // self.fields.iter().map(|f| f.name().to_owned()).collect()
+        self.fields.iter().map(|f| "".to_owned()).collect()
     }
 }
 
@@ -64,31 +66,36 @@ where
             Kind::DoesNotExist => write!(
                 f,
                 "entity {} does not exist (couldn't find the entity searched by fields {:?})",
-                E::NAME,
+                // E::NAME,
+                "",
                 self.fields_to_debug(),
             ),
             Kind::AlreadyExist => write!(
                 f,
                 "entity {} already exist (couldn't update the entity searched by fields {:?})",
-                E::NAME,
+                // E::NAME,
+                "",
                 self.fields_to_debug(),
             ),
             Kind::UniqueConstraintViolation => write!(
                 f,
                 "unique constraint violation of {} entity (unique constraint of the set of fields {:?} violated)",
-                E::NAME,
+                // E::NAME,
+                "",
                 self.fields_to_debug(),
             ),
             Kind::RefConstraintViolation => write!(
                 f,
                 "reference constraint violation of {} entity (reference constraint of the set of fields {:?} violated)",
-                E::NAME,
+                // E::NAME,
+                "",
                 self.fields_to_debug(),
             ),
             Kind::CheckConstraintViolation => write!(
                 f,
                 "check constraint violation of {} entity (check constraint of the set of fields {:?} violated)",
-                E::NAME,
+                // E::NAME,
+                "",
                 self.fields_to_debug(),
             ),
         }

@@ -67,7 +67,7 @@ pub struct SqlxCase<Entity, Attrs> {
 }
 
 impl SqlxCase<Nothing, Nothing> {
-    pub fn unique_constraint<Entity>(constraint: &'static str) -> SqlxCase<Entity, Nothing> {
+    pub const fn unique_constraint<Entity>(constraint: &'static str) -> SqlxCase<Entity, Nothing> {
         SqlxCase {
             kind: Kind::UniqueConstraint,
             constraint,
@@ -76,7 +76,9 @@ impl SqlxCase<Nothing, Nothing> {
         }
     }
 
-    pub fn foreign_key_constraint<Entity>(constraint: &'static str) -> SqlxCase<Entity, Nothing> {
+    pub const fn foreign_key_constraint<Entity>(
+        constraint: &'static str,
+    ) -> SqlxCase<Entity, Nothing> {
         SqlxCase {
             kind: Kind::ForeignKeyConstraint,
             constraint,
@@ -85,7 +87,7 @@ impl SqlxCase<Nothing, Nothing> {
         }
     }
 
-    pub fn check_constraint<Entity>(constraint: &'static str) -> SqlxCase<Entity, Nothing> {
+    pub const fn check_constraint<Entity>(constraint: &'static str) -> SqlxCase<Entity, Nothing> {
         SqlxCase {
             kind: Kind::CheckConstraint,
             constraint,
@@ -94,7 +96,7 @@ impl SqlxCase<Nothing, Nothing> {
         }
     }
 
-    pub fn not_found<Entity>() -> SqlxCase<Entity, Nothing> {
+    pub const fn not_found<Entity>() -> SqlxCase<Entity, Nothing> {
         SqlxCase {
             kind: Kind::NotFound,
             constraint: "",
@@ -105,7 +107,7 @@ impl SqlxCase<Nothing, Nothing> {
 }
 
 impl<Entity: EntityTrait> SqlxCase<Entity, Nothing> {
-    pub fn with_attrs<Attrs: IntoIterator<Item = Entity::Attr>>(
+    pub const fn with_attrs<Attrs: IntoIterator<Item = Entity::Attr>>(
         self,
         attrs: Attrs,
     ) -> SqlxCase<Entity, Attrs> {

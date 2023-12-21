@@ -1,99 +1,85 @@
+use crate::{fetch_one, fetch_optional, person::models::PersonsIden, PgTransaction};
+
 mod models;
 
-use app::user::{Entity, EntityAttr};
-use sea_query::{Asterisk, Expr, PostgresQueryBuilder, Query};
-use sea_query_binder::SqlxBinder;
+use app::{
+    person::{self, Entity, EntityId},
+    user,
+};
+use sea_query::{Expr, Query};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use utils::{
-    entity::Id,
-    outcome::Outcome,
-    repo::{
-        ex::Exception,
-        sqlx::{IntoSqlxMapper, SqlxCase},
-        BaseRepo,
-    },
-};
 
 use self::models::Persons;
-use crate::{person::models::PersonsIden, PgTransaction};
 
-pub struct PgPersonRepository {
+pub struct PgPersonRepo {
     txn: Arc<Mutex<PgTransaction<'static>>>,
 }
 
-#[async_trait::async_trait]
-impl BaseRepo<Entity> for PgPersonRepository {
-    async fn insert(&mut self, entity: Entity) -> Outcome<Entity, Exception<Entity>> {
-        let (sql, args) = Query::insert()
+impl PgPersonRepo {
+    async fn insert(&self, entity: Entity) -> Result<Persons, anyhow::Error> {
+        let mut query = Query::insert();
+        let query = query
             .into_table(PersonsIden::Table)
-            .columns([PersonsIden::Email, PersonsIden::Password])
-            .values_panic([entity.email.into(), entity.password.value.into()])
-            .returning_all()
-            .build_sqlx(PostgresQueryBuilder);
+            .columns([PersonsIden::UserId])
+            .values_panic([entity.user_id.value.into()])
+            .returning_all();
 
-        let person: Persons = sqlx::query_as_with(&sql, args)
-            .fetch_one(self.txn.lock().await.as_mut())
-            .await
-            .into_sqlx_mapper()
-            .case(SqlxCase::unique_constraint("persons_email_key").with_attrs([EntityAttr::Email]))
-            .map()?;
-
-        Outcome::Ok(person.into())
+        fetch_one(&self.txn, query).await
     }
 
-    async fn update(&mut self, entity: Entity) -> Outcome<Entity, Exception<Entity>> {
-        let (sql, args) = Query::update()
+    async fn update(&self, entity: Entity) -> Result<Persons, anyhow::Error> {
+        let mut query = Query::update();
+        let query = query
             .table(PersonsIden::Table)
-            .values([
-                (PersonsIden::Email, entity.email.into()),
-                (PersonsIden::Password, entity.password.value.into()),
-            ])
+            .values([(PersonsIden::UserId, entity.user_id.value.into())])
             .and_where(Expr::col(PersonsIden::Id).is(entity.id.value))
-            .returning_all()
-            .build_sqlx(PostgresQueryBuilder);
+            .returning_all();
 
-        let person: Persons = sqlx::query_as_with(&sql, args)
-            .fetch_one(self.txn.lock().await.as_mut())
-            .await
-            .into_sqlx_mapper()
-            .case(SqlxCase::unique_constraint("persons_email_key").with_attrs([EntityAttr::Email]))
-            .map()?;
+        fetch_one(&self.txn, query).await
+    }
+}
 
-        Outcome::Ok(person.into())
+#[async_trait::async_trait]
+impl person::Repo for PgPersonRepo {
+    async fn save(&mut self, entity: Entity) -> Result<Entity, anyhow::Error> {
+        if self.find(entity.id).await?.is_some() {
+            self.update(entity).await
+        } else {
+            self.insert(entity).await
+        }
+        .map(Into::into)
     }
 
-    async fn delete(&mut self, id: &Id<Entity>) -> Outcome<Entity, Exception<Entity>> {
-        let (sql, args) = Query::delete()
+    async fn delete(&mut self, entity: &Entity) -> Result<(), anyhow::Error> {
+        let mut query = Query::delete();
+        let query = query
             .from_table(PersonsIden::Table)
-            .and_where(Expr::col(PersonsIden::Id).is(id.value))
-            .returning_all()
-            .build_sqlx(PostgresQueryBuilder);
+            .and_where(Expr::col(PersonsIden::Id).is(entity.id.value));
 
-        let person: Persons = sqlx::query_as_with(&sql, args)
-            .fetch_one(self.txn.lock().await.as_mut())
-            .await
-            .into_sqlx_mapper()
-            .case(SqlxCase::unique_constraint("persons_email_key").with_attrs([EntityAttr::Email]))
-            .map()?;
-
-        Outcome::Ok(person.into())
+        fetch_one::<()>(&self.txn, query).await
     }
 
-    async fn find(&self, id: &Id<Entity>) -> Outcome<Entity, Exception<Entity>> {
-        let (sql, args) = Query::select()
+    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+        let mut query = Query::select();
+        let query = query
             .from(PersonsIden::Table)
-            .column(Asterisk)
-            .and_where(Expr::col(PersonsIden::Id).is(id.value))
-            .build_sqlx(PostgresQueryBuilder);
+            .and_where(Expr::col(PersonsIden::Id).is(id.value));
 
-        let person: Persons = sqlx::query_as_with(&sql, args)
-            .fetch_one(self.txn.lock().await.as_mut())
-            .await
-            .into_sqlx_mapper()
-            .case(SqlxCase::unique_constraint("persons_email_key").with_attrs([EntityAttr::Email]))
-            .map()?;
+        let model = fetch_optional::<Persons>(&self.txn, query).await?;
+        Ok(model.map(Into::into))
+    }
 
-        Outcome::Ok(person.into())
+    async fn find_by_user_id(
+        &mut self,
+        user_id: user::EntityId,
+    ) -> Result<Option<Entity>, anyhow::Error> {
+        let mut query = Query::select();
+        let query = query
+            .from(PersonsIden::Table)
+            .and_where(Expr::col(PersonsIden::UserId).is(user_id.value));
+
+        let model = fetch_optional::<Persons>(&self.txn, query).await?;
+        Ok(model.map(Into::into))
     }
 }

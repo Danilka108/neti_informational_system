@@ -12,16 +12,6 @@ pub enum Exception {
     AlreadyExist,
     #[error("user person password")]
     InvalidPassword,
-    #[error("session already exist")]
-    SessionAlreadyExist,
-    #[error("session does not exist")]
-    SessionDoesNotExist,
-    #[error("sessions limit reached")]
-    SessionsLimitReached,
-    #[error("invalid refresh token")]
-    InvalidRefreshToken,
-    #[error("session expired")]
-    SessionExpired,
 }
 
 impl FromRepoEx<Entity> for Exception {
@@ -52,20 +42,6 @@ impl FromRepoEx<Entity> for Exception {
             .eq_to(&repo_ex)
         {
             return Some(Exception::AlreadyExist);
-        }
-
-        if Case::does_not_exist()
-            .with_fields([EntityAttr::Sessions])
-            .eq_to(&repo_ex)
-        {
-            return Exception::SessionDoesNotExist.into();
-        }
-
-        if Case::unique_constraint_violated()
-            .with_fields([EntityAttr::Sessions])
-            .eq_to(&repo_ex)
-        {
-            return Exception::SessionAlreadyExist.into();
         }
 
         None

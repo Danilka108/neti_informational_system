@@ -81,26 +81,26 @@ pub fn impl_entity(mut ast: syn::ItemStruct, _args: TokenStream) -> TokenStream2
         }
 
         impl ::utils::entity::AttrTrait for #attr_enum_name {
-            fn name(&self) -> &'static str {
-                match self {
-                    #(#entity_attrs_impl)*
-                }
-            }
+            // fn name(&self) -> &'static str {
+            //     match self {
+            //         #(#entity_attrs_impl)*
+            //     }
+            // }
         }
 
         impl ::utils::entity::EntityTrait for #name {
-            const NAME: &'static str = #name_snake_case;
+            // const NAME: &'static str = #name_snake_case;
 
             type Attr = #attr_enum_name;
             type IdValue = #id_type;
 
-            fn id_attr() -> Self::Attr {
-                #attr_enum_name::#id_entity_attr
-            }
+            // fn id_attr() -> Self::Attr {
+            //     #attr_enum_name::#id_entity_attr
+            // }
 
-            fn non_id_attrs() -> Vec<Self::Attr> {
-                ::std::vec![#(#attr_enum_name::#entity_non_id_attrs),*]
-            }
+            // fn non_id_attrs() -> Vec<Self::Attr> {
+            //     ::std::vec![#(#attr_enum_name::#entity_non_id_attrs),*]
+            // }
         }
 
         impl ::utils::entity::ProvideId<#name> for #name {
