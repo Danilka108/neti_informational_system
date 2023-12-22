@@ -14,6 +14,14 @@ pub struct StudyGroups {
     pub department_id: i32,
 }
 
+#[derive(Clone, Debug, FromRow)]
+pub struct JoinRow {
+    #[sqlx(flatten)]
+    pub study_group: StudyGroups,
+    #[sqlx(flatten)]
+    pub curriculum: StudyGroupCurriculums,
+}
+
 impl StudyGroups {
     pub fn into_entity(self, curriculums: Vec<StudyGroupCurriculums>) -> study_group::Entity {
         study_group::Entity {

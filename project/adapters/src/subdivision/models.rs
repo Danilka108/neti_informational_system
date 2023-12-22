@@ -11,7 +11,7 @@ pub struct Subdivisions {
 }
 
 #[derive(FromRow)]
-pub struct SelectResult {
+pub struct JoinRow {
     #[sqlx(flatten)]
     pub subdivision: Subdivisions,
     #[sqlx(flatten)]

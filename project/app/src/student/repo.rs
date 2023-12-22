@@ -1,4 +1,4 @@
-use crate::{person, tag, university};
+use crate::{attestation, person, study_group};
 
 use super::{Entity, EntityId};
 
@@ -10,20 +10,18 @@ pub trait Repo {
 
     async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error>;
 
-    async fn find_by_name(&mut self, name: String) -> Result<Option<Entity>, anyhow::Error>;
-
-    async fn list_by_university(
+    async fn list_by_person(
         &mut self,
-        university_id: university::EntityId,
+        person_id: person::EntityId,
     ) -> Result<Vec<Entity>, anyhow::Error>;
 
-    async fn list_by_tags(
+    async fn list_by_study_group(
         &mut self,
-        tags_ids: impl IntoIterator<Item = tag::EntityId> + Send,
+        study_group_id: study_group::EntityId,
     ) -> Result<Vec<Entity>, anyhow::Error>;
 
-    async fn list_by_members(
+    async fn list_by_attestations(
         &mut self,
-        tags_ids: impl IntoIterator<Item = person::EntityId> + Send,
+        attestations_ids: impl IntoIterator<Item = attestation::EntityId> + Send,
     ) -> Result<Vec<Entity>, anyhow::Error>;
 }

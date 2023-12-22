@@ -166,7 +166,7 @@ CREATE TABLE attestations
       CHECK (duration_in_hours > 0)
 );
 
-CREATE TABLE attestations_examiners
+CREATE TABLE attestation_examiners
 (
     examiner_id serial NOT NULL references teachers,
     attestation_id serial NOT NULL references attestations,
@@ -174,14 +174,14 @@ CREATE TABLE attestations_examiners
     PRIMARY KEY (examiner_id, attestation_id)
 );
 
-CREATE TABLE students_attestations
+CREATE TABLE student_attestations
 (
     student_id serial NOT NULL references students,
     attestation_id serial NOT NULL references attestations,
     score integer NOT NULL
         CONSTRAINT students_attestations_score_check
             CHECK (score >= 0 AND score <= 100),
-    rating_contributor_id serial references persons,
+    -- rating_contributor_id serial references persons,
 
     PRIMARY KEY (student_id, attestation_id)
 );
@@ -201,11 +201,22 @@ CREATE TABLE classes
         CHECK (duration_in_hours > 0)
 );
 
-create table classes_teachers
+create table teacher_classes
 (
   teacher_id serial not null references teachers,
   class_id serial not null references classes,
   study_group_id serial not null references study_groups,
 
   primary key (teacher_id, class_id, study_group_id)
+);
+
+create table class_teachers
+(
+  id serial primary key,
+
+  teacher_id serial not null references teachers,
+  class_id serial not null references classes,
+  study_group_id serial not null references study_groups,
+
+  unique (teacher_id, class_id, study_group_id)
 );

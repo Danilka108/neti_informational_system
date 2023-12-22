@@ -1,6 +1,8 @@
 mod ex;
 mod repo;
 
+use std::collections::HashSet;
+
 use crate::{person, tag, university, AdaptersModule, AppModule};
 use utils::{
     entity::{entity, entity_method, LazyAttr, ProvideId},
@@ -18,11 +20,11 @@ pub struct Entity {
     pub id: i32,
     pub name: String,
     pub university_id: university::EntityId,
-    pub tags: Vec<tag::EntityId>,
-    pub members: Vec<Member>,
+    pub tags: HashSet<tag::EntityId>,
+    pub members: HashSet<Member>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Member {
     pub person_id: person::EntityId,
     pub role: String,

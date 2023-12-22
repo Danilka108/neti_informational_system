@@ -1,23 +1,22 @@
 use utils::di::{Module, Provide};
 
-// pub mod attestation;
-// pub mod auth_service;
-// pub mod class;
+pub mod attestation;
+pub mod class;
+pub mod class_kind;
 pub mod curriculum;
-// pub mod curriculum_module;
-// pub mod discipline;
+pub mod curriculum_module;
+pub mod discipline;
 pub mod passport;
 pub mod person;
-
-// pub mod student;
-// pub mod study_group;
+pub mod student;
+pub mod study_group;
 pub mod subdivision;
-// pub mod teacher;
-// pub mod token;
 pub mod tag;
+pub mod teacher;
 pub mod university;
 pub mod user;
 pub mod user_session;
+// pub mod token;
 
 pub trait AdaptersModule: Send + Module
 // + Provide<user::BoxedRepo>

@@ -1,5 +1,7 @@
 mod repo;
 
+use std::collections::HashSet;
+
 use crate::{curriculum, subdivision};
 
 pub use repo::Repo;
@@ -7,6 +9,7 @@ use utils::entity::entity;
 
 pub type BoxedRepo = Box<dyn Repo + Send + Sync>;
 
+#[derive(Debug, Clone)]
 #[entity]
 pub struct Entity {
     #[id]
@@ -15,9 +18,10 @@ pub struct Entity {
     pub studying_qualification: Qualification,
     pub training_kind: TrainingKind,
     pub department_id: subdivision::EntityId,
-    pub curriculums: Vec<curriculum::EntityId>,
+    pub curriculums: HashSet<curriculum::EntityId>,
 }
 
+#[derive(Debug, Clone)]
 pub enum Qualification {
     Bachelor,
     Master,
@@ -25,6 +29,7 @@ pub enum Qualification {
     Doctorate,
 }
 
+#[derive(Debug, Clone)]
 pub enum TrainingKind {
     FullTime,
     Correspondence,

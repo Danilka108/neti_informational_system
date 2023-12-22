@@ -1,18 +1,23 @@
 mod models;
 
 use app::{
+    person,
     subdivision::{self, Entity, EntityId},
     tag, university,
 };
 use sea_query::{
-    Alias, Asterisk, DynIden, Expr, JoinType, Query, SeaRc, SelectStatement, SimpleExpr,
+    Alias, Asterisk, Condition, DynIden, Expr, IntoCondition, JoinType, Query, SeaRc,
+    SelectStatement,
 };
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 use tokio::sync::Mutex;
 
 use crate::{
     fetch_all, fetch_one,
-    subdivision::models::{SelectResult, SubdivisionTagsIden, SubdivisionsIden},
+    subdivision::models::{JoinRow, SubdivisionTagsIden, SubdivisionsIden},
     PgTransaction,
 };
 
@@ -64,7 +69,7 @@ impl PgSubdivisionRepo {
     async fn insert_tags(
         &self,
         id: i32,
-        tags: Vec<tag::EntityId>,
+        tags: HashSet<tag::EntityId>,
     ) -> Result<Vec<SubdivisionTags>, anyhow::Error> {
         let mut inserted_tags = Vec::new();
 
@@ -86,16 +91,6 @@ impl PgSubdivisionRepo {
         Ok(inserted_tags)
     }
 
-    // async fn select_tags(&self, id: i32) -> Result<Vec<SubdivisionTags>, anyhow::Error> {
-    //     let mut query = Query::select();
-    //     let query = query
-    //         .column(Asterisk)
-    //         .from(SubdivisionTagsIden::Table)
-    //         .and_where(Expr::col(SubdivisionTagsIden::SubdivisionId).is(id));
-
-    //     fetch_all(&self.txn, query).await
-    // }
-
     async fn delete_members(&self, id: i32) -> Result<Vec<SubdivisionMembers>, anyhow::Error> {
         let mut query = Query::delete();
         let query = query
@@ -109,7 +104,7 @@ impl PgSubdivisionRepo {
     async fn insert_members(
         &self,
         id: i32,
-        members: Vec<subdivision::Member>,
+        members: HashSet<subdivision::Member>,
     ) -> Result<Vec<SubdivisionMembers>, anyhow::Error> {
         let mut inserted_members = Vec::new();
 
@@ -132,18 +127,8 @@ impl PgSubdivisionRepo {
         Ok(inserted_members)
     }
 
-    // async fn select_members(&self, id: i32) -> Result<Vec<SubdivisionMembers>, anyhow::Error> {
-    //     let mut query = Query::select();
-    //     let query = query
-    //         .column(Asterisk)
-    //         .from(SubdivisionMembersIden::Table)
-    //         .and_where(Expr::col(SubdivisionMembersIden::SubdivisionId).is(id));
-
-    //     fetch_all(&self.txn, query).await
-    // }
-
     // select * from subdivisions as s join (select m.subdivision_id, m.person_id, m.role, t.tag_name from subdivision_members as m full outer join subdivision_tags as t on m.subdivision_id = t.subdivision_id) as r on s.id = r.subdivision_id where s.x = y;
-    async fn select(&self, where_expr: SimpleExpr) -> Result<Vec<SelectResult>, anyhow::Error> {
+    async fn select(&self, cond: impl IntoCondition) -> Result<Vec<JoinRow>, anyhow::Error> {
         let subdivision_table = SubdivisionsIden::Table;
         let subdivision_id = SubdivisionMembersIden::SubdivisionId;
 
@@ -158,7 +143,7 @@ impl PgSubdivisionRepo {
             .from(subdivision_table)
             .column(Asterisk)
             .join_subquery(JoinType::InnerJoin, subquery, subquery_alias.clone(), on)
-            .and_where(where_expr);
+            .cond_where(cond);
 
         fetch_all(&self.txn, &query).await
     }
@@ -190,8 +175,8 @@ impl PgSubdivisionRepo {
         (alias, query)
     }
 
-    fn entity_from_select_result(join_res: Vec<SelectResult>) -> Option<Entity> {
-        let (models, members_and_tags) = join_res
+    fn entity_from_select(select: Vec<JoinRow>) -> Option<Entity> {
+        let (models, members_and_tags) = select
             .into_iter()
             .map(|v| (v.subdivision, (v.member, v.tag)))
             .unzip::<_, _, Vec<_>, Vec<_>>();
@@ -226,12 +211,14 @@ impl subdivision::Repo for PgSubdivisionRepo {
 
     async fn delete(&mut self, entity: &Entity) -> Result<(), anyhow::Error> {
         let mut query = Query::delete();
-        let query = query
-            .from_table(SubdivisionsIden::Table)
-            .and_where(Expr::col(SubdivisionsIden::Id).is(entity.id.value))
-            .returning_all();
+        let query = query.from_table(SubdivisionsIden::Table).and_where(
+            Expr::col((SubdivisionsIden::Table, SubdivisionsIden::Id)).is(entity.id.value),
+        );
 
-        let _ = fetch_one::<Subdivisions>(&self.txn, query).await?;
+        fetch_one::<()>(&self.txn, query).await?;
+        let _ = self.delete_tags(entity.id.value).await?;
+        let _ = self.delete_members(entity.id.value).await?;
+
         Ok(())
     }
 
@@ -240,15 +227,15 @@ impl subdivision::Repo for PgSubdivisionRepo {
             .select(Expr::col(SubdivisionsIden::Id).is(id.value))
             .await?;
 
-        Ok(Self::entity_from_select_result(res))
+        Ok(Self::entity_from_select(res))
     }
 
     async fn find_by_name(&mut self, name: String) -> Result<Option<Entity>, anyhow::Error> {
         let res = self
-            .select(Expr::col(SubdivisionsIden::Name).is(name))
+            .select(Expr::col((SubdivisionsIden::Table, SubdivisionsIden::Name)).is(name))
             .await?;
 
-        Ok(Self::entity_from_select_result(res))
+        Ok(Self::entity_from_select(res))
     }
 
     async fn list_by_university(
@@ -256,10 +243,13 @@ impl subdivision::Repo for PgSubdivisionRepo {
         university_id: university::EntityId,
     ) -> Result<Vec<Entity>, anyhow::Error> {
         let results = self
-            .select(Expr::col(SubdivisionsIden::UniversityId).is(university_id.value))
+            .select(
+                Expr::col((SubdivisionsIden::Table, SubdivisionsIden::UniversityId))
+                    .is(university_id.value),
+            )
             .await?;
 
-        let mut groups = HashMap::<i32, Vec<SelectResult>>::new();
+        let mut groups = HashMap::<i32, Vec<JoinRow>>::new();
         for result in results {
             groups
                 .entry(result.subdivision.id)
@@ -269,7 +259,72 @@ impl subdivision::Repo for PgSubdivisionRepo {
 
         let entities = groups
             .into_iter()
-            .map(|(_, v)| Self::entity_from_select_result(v))
+            .map(|(_, v)| Self::entity_from_select(v))
+            .filter_map(|v| v)
+            .collect();
+
+        Ok(entities)
+    }
+
+    async fn list_by_tags(
+        &mut self,
+        tags_ids: impl IntoIterator<Item = tag::EntityId> + Send,
+    ) -> Result<Vec<Entity>, anyhow::Error> {
+        let mut cond = Condition::all();
+        for tag_id in tags_ids {
+            cond = cond.add(
+                Expr::col((SubdivisionTagsIden::Table, SubdivisionTagsIden::TagName))
+                    .is(tag_id.value),
+            );
+        }
+
+        let select = self.select(cond).await?;
+
+        let mut groups = HashMap::<i32, Vec<JoinRow>>::new();
+        for result in select {
+            groups
+                .entry(result.subdivision.id)
+                .or_insert(vec![])
+                .push(result);
+        }
+
+        let entities = groups
+            .into_iter()
+            .map(|(_, v)| Self::entity_from_select(v))
+            .filter_map(|v| v)
+            .collect();
+
+        Ok(entities)
+    }
+
+    async fn list_by_members(
+        &mut self,
+        tags_ids: impl IntoIterator<Item = person::EntityId> + Send,
+    ) -> Result<Vec<Entity>, anyhow::Error> {
+        let mut cond = Condition::all();
+        for tag_id in tags_ids {
+            cond = cond.add(
+                Expr::col((
+                    SubdivisionMembersIden::Table,
+                    SubdivisionMembersIden::PersonId,
+                ))
+                .is(tag_id.value),
+            );
+        }
+
+        let select = self.select(cond).await?;
+
+        let mut groups = HashMap::<i32, Vec<JoinRow>>::new();
+        for result in select {
+            groups
+                .entry(result.subdivision.id)
+                .or_insert(vec![])
+                .push(result);
+        }
+
+        let entities = groups
+            .into_iter()
+            .map(|(_, v)| Self::entity_from_select(v))
             .filter_map(|v| v)
             .collect();
 

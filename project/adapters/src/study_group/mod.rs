@@ -1,12 +1,17 @@
-use app::study_group::{self, Entity};
-use sea_query::{Asterisk, Expr, Query};
+use std::collections::{HashMap, HashSet};
+
+use app::{
+    curriculum,
+    study_group::{self, Entity, EntityId},
+};
+use sea_query::{Asterisk, Condition, Expr, IntoCondition, Query};
 use tokio::sync::Mutex;
 
 use self::models::{
-    PgQualification, PgTrainingKind, StudyGroupCurriculums, StudyGroupCurriculumsIden, StudyGroups,
-    StudyGroupsIden,
+    JoinRow, PgQualification, PgTrainingKind, StudyGroupCurriculums, StudyGroupCurriculumsIden,
+    StudyGroups, StudyGroupsIden,
 };
-use crate::{fetch_all, fetch_one, fetch_optional, PgTransaction};
+use crate::{fetch_all, fetch_one, PgTransaction};
 
 mod models;
 
@@ -14,155 +19,212 @@ pub struct PgStudyGroupRepo {
     txn: std::sync::Arc<Mutex<PgTransaction<'static>>>,
 }
 
+impl PgStudyGroupRepo {
+    async fn insert(&self, entity: Entity) -> Result<StudyGroups, anyhow::Error> {
+        let mut query = Query::insert();
+        query
+            .into_table(StudyGroupsIden::Table)
+            .columns([
+                StudyGroupsIden::Name,
+                StudyGroupsIden::StudyingQualification,
+                StudyGroupsIden::TrainingKind,
+                StudyGroupsIden::DepartmentId,
+            ])
+            .values_panic([
+                entity.name.into(),
+                PgQualification::from(entity.studying_qualification)
+                    .to_string()
+                    .into(),
+                PgTrainingKind::from(entity.training_kind)
+                    .to_string()
+                    .into(),
+                entity.department_id.value.into(),
+            ])
+            .returning_all();
+
+        let model = fetch_one(&self.txn, &query).await?;
+        Ok(model)
+    }
+
+    async fn update(&self, entity: Entity) -> Result<StudyGroups, anyhow::Error> {
+        let mut query = Query::update();
+        query
+            .table(StudyGroupsIden::Table)
+            .values([
+                (StudyGroupsIden::Name, entity.name.into()),
+                (
+                    StudyGroupsIden::StudyingQualification,
+                    PgQualification::from(entity.studying_qualification)
+                        .to_string()
+                        .into(),
+                ),
+                (
+                    StudyGroupsIden::TrainingKind,
+                    PgTrainingKind::from(entity.training_kind)
+                        .to_string()
+                        .into(),
+                ),
+                (
+                    StudyGroupsIden::DepartmentId,
+                    entity.department_id.value.into(),
+                ),
+            ])
+            .and_where(Expr::col(StudyGroupsIden::Id).is(entity.id.value))
+            .returning_all();
+
+        let model = fetch_one(&self.txn, &query).await?;
+        Ok(model)
+    }
+
+    // select * from study_groups as sg join study_group_curriculums as c on sg.id = c.study_group_id where sg.x = y;
+    async fn select(&self, cond: impl IntoCondition) -> Result<Vec<JoinRow>, anyhow::Error> {
+        let study_group_table = StudyGroupsIden::Table;
+        let curriculum_table = StudyGroupCurriculumsIden::Table;
+        let study_group_id = StudyGroupsIden::Id;
+        let curriculum_study_group_id = StudyGroupCurriculumsIden::CurriculumId;
+
+        let on = Expr::col((study_group_table, study_group_id))
+            .equals((curriculum_table, curriculum_study_group_id));
+
+        let mut query = Query::select();
+        query
+            .from(study_group_table)
+            .column(Asterisk)
+            .join(sea_query::JoinType::InnerJoin, curriculum_table, on)
+            .cond_where(cond);
+
+        let results = fetch_all::<JoinRow>(&self.txn, &query).await?;
+        Ok(results)
+    }
+
+    fn entity_from_select(select: Vec<JoinRow>) -> Option<Entity> {
+        let (models, curriculums) = select
+            .into_iter()
+            .map(|v| (v.study_group, v.curriculum))
+            .unzip::<_, _, Vec<_>, Vec<_>>();
+
+        let Some(model) = models.into_iter().take(1).next() else {
+            return None;
+        };
+
+        Some(model.into_entity(curriculums))
+    }
+
+    async fn delete_curriculums(&self, id: i32) -> Result<(), anyhow::Error> {
+        let mut query = Query::delete();
+        query
+            .from_table(StudyGroupCurriculumsIden::Table)
+            .and_where(Expr::col(StudyGroupCurriculumsIden::StudyGroupId).is(id));
+
+        fetch_one::<()>(&self.txn, &query).await
+    }
+
+    async fn insert_curriculums(
+        &self,
+        id: i32,
+        curriculums: HashSet<curriculum::EntityId>,
+    ) -> Result<Vec<StudyGroupCurriculums>, anyhow::Error> {
+        let mut models = Vec::new();
+
+        for curriculum in curriculums {
+            let mut query = Query::insert();
+            query
+                .into_table(StudyGroupCurriculumsIden::Table)
+                .columns([
+                    StudyGroupCurriculumsIden::StudyGroupId,
+                    StudyGroupCurriculumsIden::CurriculumId,
+                ])
+                .values_panic([id.into(), curriculum.value.into()])
+                .returning_all();
+
+            let model = fetch_one::<StudyGroupCurriculums>(&self.txn, &query).await?;
+            models.push(model);
+        }
+
+        Ok(models)
+    }
+}
+
 #[async_trait::async_trait]
 impl study_group::Repo for PgStudyGroupRepo {
     async fn save(&mut self, entity: Entity) -> Result<Entity, anyhow::Error> {
-        let model: StudyGroups = if let Some(_) = self.find(entity.id.value).await? {
-            fetch_one(
-                &self.txn,
-                Query::update()
-                    .table(StudyGroupsIden::Table)
-                    .values([
-                        (StudyGroupsIden::Name, entity.name.into()),
-                        (
-                            StudyGroupsIden::StudyingQualification,
-                            PgQualification::from(entity.studying_qualification)
-                                .to_string()
-                                .into(),
-                        ),
-                        (
-                            StudyGroupsIden::TrainingKind,
-                            PgTrainingKind::from(entity.training_kind)
-                                .to_string()
-                                .into(),
-                        ),
-                        (
-                            StudyGroupsIden::DepartmentId,
-                            entity.department_id.value.into(),
-                        ),
-                    ])
-                    .and_where(Expr::col(StudyGroupsIden::Id).is(entity.id.value))
-                    .returning_all(),
-            )
-            .await?
+        let model = if self.find(entity.id).await?.is_some() {
+            self.update(entity.clone()).await?
         } else {
-            fetch_one(
-                &self.txn,
-                Query::insert()
-                    .into_table(StudyGroupsIden::Table)
-                    .columns([
-                        StudyGroupsIden::Name,
-                        StudyGroupsIden::StudyingQualification,
-                        StudyGroupsIden::TrainingKind,
-                        StudyGroupsIden::DepartmentId,
-                    ])
-                    .values_panic([
-                        entity.name.into(),
-                        PgQualification::from(entity.studying_qualification)
-                            .to_string()
-                            .into(),
-                        PgTrainingKind::from(entity.training_kind)
-                            .to_string()
-                            .into(),
-                        entity.department_id.value.into(),
-                    ])
-                    .returning_all(),
-            )
-            .await?
+            self.insert(entity.clone()).await?
         };
 
-        let _ = delete_curriculums(model.id).await?;
-
-        let mut curriculums = Vec::new();
-        for curriculum in entity.curriculums {
-            let curriculum: StudyGroupCurriculums = fetch_one(
-                &self.txn,
-                Query::insert()
-                    .into_table(StudyGroupCurriculumsIden::Table)
-                    .columns([
-                        StudyGroupCurriculumsIden::StudyGroupId,
-                        StudyGroupCurriculumsIden::CurriculumId,
-                    ])
-                    .values_panic([entity.id.value.into(), curriculum.value.into()])
-                    .returning_all(),
-            )
+        self.delete_curriculums(model.id).await?;
+        let curriculums = self
+            .insert_curriculums(model.id, entity.curriculums)
             .await?;
-            curriculums.push(curriculum);
-        }
 
         Ok(model.into_entity(curriculums))
     }
 
-    async fn delete(&mut self, id: i32) -> Result<Entity, anyhow::Error> {
-        let model: StudyGroups = fetch_one(
-            &self.txn,
-            Query::delete()
-                .from_table(StudyGroupsIden::Table)
-                .and_where(Expr::col(StudyGroupsIden::Id).is(id))
-                .returning_all(),
-        )
-        .await?;
+    async fn delete(&mut self, entity: &Entity) -> Result<(), anyhow::Error> {
+        let mut query = Query::delete();
+        query
+            .from_table(StudyGroupsIden::Table)
+            .and_where(Expr::col(StudyGroupsIden::Id).is(entity.id.value));
 
-        let curriculums: Vec<StudyGroupCurriculums> = delete_curriculums(model.id).await?;
+        fetch_one::<()>(&self.txn, &query).await?;
+        let _ = self.delete_curriculums(entity.id.value).await?;
 
-        Ok(model.into_entity(curriculums))
+        Ok(())
     }
 
-    async fn find(&mut self, id: i32) -> Result<Option<Entity>, anyhow::Error> {
-        let Some(model): Option<StudyGroups> = fetch_optional(
-            &self.txn,
-            Query::select()
-                .from(StudyGroupsIden::Table)
-                .column(Asterisk)
-                .and_where(Expr::col(StudyGroupsIden::Id).is(id)),
-        )
-        .await?
-        else {
-            return Ok(None);
-        };
+    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+        let select = self
+            .select(Expr::col((StudyGroupsIden::Table, StudyGroupsIden::Id)).is(id.value))
+            .await?;
 
-        let curriculums = select_curriculums(model.id).await?;
-
-        Ok(Some(model.into_entity(curriculums)))
+        let entity = Self::entity_from_select(select);
+        Ok(entity)
     }
 
     async fn find_by_name(&mut self, name: String) -> Result<Option<Entity>, anyhow::Error> {
-        let Some(model): Option<StudyGroups> = fetch_optional(
-            &self.txn,
-            Query::select()
-                .from(StudyGroupsIden::Table)
-                .column(Asterisk)
-                .and_where(Expr::col(StudyGroupsIden::Name).is(name)),
-        )
-        .await?
-        else {
-            return Ok(None);
-        };
+        let select = self
+            .select(Expr::col((StudyGroupsIden::Table, StudyGroupsIden::Name)).is(name))
+            .await?;
 
-        let curriculums = select_curriculums(model.id).await?;
-
-        Ok(Some(model.into_entity(curriculums)))
+        let entity = Self::entity_from_select(select);
+        Ok(entity)
     }
-}
 
-async fn select_curriculums(id: i32) -> Result<Vec<StudyGroupCurriculums>, anyhow::Error> {
-    fetch_all(
-        &self.txn,
-        Query::select()
-            .from(StudyGroupCurriculumsIden::Table)
-            .column(Asterisk)
-            .and_where(Expr::col(StudyGroupCurriculumsIden::StudyGroupId).is(id)),
-    )
-    .await
-}
+    async fn list_by_curriculums(
+        &mut self,
+        curriculums_ids: impl IntoIterator<Item = curriculum::EntityId> + Send,
+    ) -> Result<Vec<Entity>, anyhow::Error> {
+        let mut cond = Condition::all();
 
-async fn delete_curriculums(id: i32) -> Result<Vec<StudyGroupCurriculums>, anyhow::Error> {
-    fetch_all(
-        &self.txn,
-        Query::delete()
-            .from_table(StudyGroupCurriculumsIden::Table)
-            .and_where(Expr::col(StudyGroupCurriculumsIden::StudyGroupId).is(id))
-            .returning_all(),
-    )
-    .await?;
+        for curriculum_id in curriculums_ids {
+            let expr = Expr::col((
+                StudyGroupCurriculumsIden::Table,
+                StudyGroupCurriculumsIden::CurriculumId,
+            ))
+            .is(curriculum_id.value);
+
+            cond = cond.add(expr);
+        }
+
+        let select = self.select(cond).await?;
+
+        let mut groups = HashMap::<i32, Vec<JoinRow>>::new();
+        for join_row in select {
+            groups
+                .entry(join_row.study_group.id)
+                .or_insert(vec![])
+                .push(join_row);
+        }
+
+        let entities = groups
+            .into_iter()
+            .map(|(_, v)| v)
+            .map(Self::entity_from_select)
+            .filter_map(|v| v)
+            .collect();
+
+        Ok(entities)
+    }
 }

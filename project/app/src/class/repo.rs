@@ -1,4 +1,4 @@
-use crate::curriculum;
+use crate::curriculum_module;
 
 use super::{Entity, EntityId};
 
@@ -10,10 +10,8 @@ pub trait Repo {
 
     async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error>;
 
-    async fn find_by_name(&mut self, name: String) -> Result<Option<Entity>, anyhow::Error>;
-
-    async fn list_by_curriculums(
-        &mut self,
-        curriculums_ids: impl IntoIterator<Item = curriculum::EntityId> + Send,
+    async fn list_by_curriculum_module(
+        &self,
+        curriculum_module_id: curriculum_module::EntityId,
     ) -> Result<Vec<Entity>, anyhow::Error>;
 }
