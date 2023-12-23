@@ -60,7 +60,7 @@ impl class_kind::Repo for PgClassKindRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let model = fetch_optional::<ClassKinds>(
             &self.txn,
             Query::select()

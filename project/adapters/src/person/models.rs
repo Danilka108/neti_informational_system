@@ -6,6 +6,7 @@ use sqlx::FromRow;
 pub struct Persons {
     pub id: i32,
     pub user_id: i32,
+    pub full_name: String,
 }
 
 impl From<Persons> for person::Entity {
@@ -13,6 +14,7 @@ impl From<Persons> for person::Entity {
         person::Entity {
             id: person::EntityId::new(value.id),
             user_id: user::EntityId::new(value.user_id),
+            full_name: value.full_name,
         }
     }
 }

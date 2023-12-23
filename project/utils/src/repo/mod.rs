@@ -7,8 +7,7 @@ pub mod case;
 pub mod ex;
 // pub mod mapper;
 
-#[cfg_attr(feature = "sqlx", path = "sqlx.rs")]
-pub mod sqlx;
+// #[cfg_attr(feature = "sqlx", path = "sqlx.rs")] pub mod sqlx;
 
 pub type RepoOutcome<Entity, Ok = Entity> = Outcome<Ok, ex::Exception<Entity>>;
 

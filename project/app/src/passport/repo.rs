@@ -8,10 +8,10 @@ pub trait Repo {
 
     async fn delete(&mut self, entity: &Entity) -> Result<(), anyhow::Error>;
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error>;
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error>;
 
     async fn list_by_person_id(
-        &mut self,
+        &self,
         person_id: person::EntityId,
     ) -> Result<Vec<Entity>, anyhow::Error>;
 }

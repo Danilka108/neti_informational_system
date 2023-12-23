@@ -91,17 +91,17 @@ impl user_session::Repo for PgUserSessionRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+        let cond = Expr::col(UserSessionsIden::UserId)
+            .is(id.value.user_id.value)
+            .and(Expr::col(UserSessionsIden::Metadata).is(id.value.metadata.clone()));
+
         let res = fetch_optional::<UserSessions>(
             &self.txn,
             Query::select()
                 .from(UserSessionsIden::Table)
                 .column(Asterisk)
-                .and_where(
-                    Expr::col(UserSessionsIden::UserId)
-                        .is(id.value.user_id.value)
-                        .and(Expr::col(UserSessionsIden::Metadata).is(id.value.metadata)),
-                ),
+                .and_where(cond),
         )
         .await?
         .map(Into::into);

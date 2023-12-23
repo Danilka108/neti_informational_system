@@ -81,7 +81,7 @@ impl curriculum_module::Repo for PgCurriculumModuleRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let mut query = Query::select();
         query
             .from(CurriculumModulesIden::Table)
@@ -93,7 +93,7 @@ impl curriculum_module::Repo for PgCurriculumModuleRepo {
     }
 
     async fn list_by_discipline_id(
-        &mut self,
+        &self,
         discipline_id: discipline::EntityId,
     ) -> Result<Vec<Entity>, anyhow::Error> {
         let mut query = Query::select();
@@ -109,7 +109,7 @@ impl curriculum_module::Repo for PgCurriculumModuleRepo {
     }
 
     async fn list_by_curriculum_id(
-        &mut self,
+        &self,
         curriculum_id: curriculum::EntityId,
     ) -> Result<Vec<Entity>, anyhow::Error> {
         let mut query = Query::select();

@@ -174,7 +174,7 @@ impl study_group::Repo for PgStudyGroupRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let select = self
             .select(Expr::col((StudyGroupsIden::Table, StudyGroupsIden::Id)).is(id.value))
             .await?;
@@ -183,7 +183,7 @@ impl study_group::Repo for PgStudyGroupRepo {
         Ok(entity)
     }
 
-    async fn find_by_name(&mut self, name: String) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find_by_name(&self, name: String) -> Result<Option<Entity>, anyhow::Error> {
         let select = self
             .select(Expr::col((StudyGroupsIden::Table, StudyGroupsIden::Name)).is(name))
             .await?;
@@ -193,8 +193,8 @@ impl study_group::Repo for PgStudyGroupRepo {
     }
 
     async fn list_by_curriculums(
-        &mut self,
-        curriculums_ids: impl IntoIterator<Item = curriculum::EntityId> + Send,
+        &self,
+        curriculums_ids: HashSet<curriculum::EntityId>,
     ) -> Result<Vec<Entity>, anyhow::Error> {
         let mut cond = Condition::all();
 

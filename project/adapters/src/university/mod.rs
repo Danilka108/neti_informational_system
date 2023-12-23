@@ -61,7 +61,7 @@ impl university::Repo for PgUniversityRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let model = fetch_optional::<Universities>(
             &self.txn,
             Query::select()
@@ -74,7 +74,7 @@ impl university::Repo for PgUniversityRepo {
         Ok(model.map(Into::into))
     }
 
-    async fn find_by_name(&mut self, name: String) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find_by_name(&self, name: String) -> Result<Option<Entity>, anyhow::Error> {
         let model = fetch_optional::<Universities>(
             &self.txn,
             Query::select()

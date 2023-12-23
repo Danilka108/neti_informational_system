@@ -40,7 +40,8 @@ CREATE TABLE persons
 (
     id serial
         PRIMARY KEY,
-    user_id serial unique not null references users
+    user_id serial unique not null references users,
+    full_name varchar(1024) not null
 );
 
 create table passports(

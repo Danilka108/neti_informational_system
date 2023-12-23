@@ -6,7 +6,7 @@ pub trait Repo {
 
     async fn delete(&mut self, entity: &Entity) -> Result<(), anyhow::Error>;
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error>;
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error>;
 
-    async fn find_by_name(&mut self, name: String) -> Result<Option<Entity>, anyhow::Error>;
+    async fn find_by_name(&self, name: String) -> Result<Option<Entity>, anyhow::Error>;
 }

@@ -222,7 +222,7 @@ impl subdivision::Repo for PgSubdivisionRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let res = self
             .select(Expr::col(SubdivisionsIden::Id).is(id.value))
             .await?;
@@ -230,7 +230,7 @@ impl subdivision::Repo for PgSubdivisionRepo {
         Ok(Self::entity_from_select(res))
     }
 
-    async fn find_by_name(&mut self, name: String) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find_by_name(&self, name: String) -> Result<Option<Entity>, anyhow::Error> {
         let res = self
             .select(Expr::col((SubdivisionsIden::Table, SubdivisionsIden::Name)).is(name))
             .await?;
@@ -239,7 +239,7 @@ impl subdivision::Repo for PgSubdivisionRepo {
     }
 
     async fn list_by_university(
-        &mut self,
+        &self,
         university_id: university::EntityId,
     ) -> Result<Vec<Entity>, anyhow::Error> {
         let results = self
@@ -267,8 +267,8 @@ impl subdivision::Repo for PgSubdivisionRepo {
     }
 
     async fn list_by_tags(
-        &mut self,
-        tags_ids: impl IntoIterator<Item = tag::EntityId> + Send,
+        &self,
+        tags_ids: HashSet<tag::EntityId>,
     ) -> Result<Vec<Entity>, anyhow::Error> {
         let mut cond = Condition::all();
         for tag_id in tags_ids {
@@ -298,17 +298,17 @@ impl subdivision::Repo for PgSubdivisionRepo {
     }
 
     async fn list_by_members(
-        &mut self,
-        tags_ids: impl IntoIterator<Item = person::EntityId> + Send,
+        &self,
+        persons_ids: HashSet<person::EntityId>,
     ) -> Result<Vec<Entity>, anyhow::Error> {
         let mut cond = Condition::all();
-        for tag_id in tags_ids {
+        for person_id in persons_ids {
             cond = cond.add(
                 Expr::col((
                     SubdivisionMembersIden::Table,
                     SubdivisionMembersIden::PersonId,
                 ))
-                .is(tag_id.value),
+                .is(person_id.value),
             );
         }
 

@@ -60,7 +60,7 @@ impl tag::Repo for PgTagRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let model = fetch_optional::<Tags>(
             &self.txn,
             Query::select()

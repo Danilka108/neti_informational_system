@@ -71,7 +71,7 @@ impl class::Repo for PgClassRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let mut query = Query::select();
         query
             .from(ClassesIden::Table)

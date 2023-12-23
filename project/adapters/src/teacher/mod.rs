@@ -162,7 +162,7 @@ impl teacher::Repo for PgTeacherRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let select = self
             .select(Expr::col((TeachersIden::Table, TeachersIden::Id)).is(id.value))
             .await?;
@@ -172,7 +172,7 @@ impl teacher::Repo for PgTeacherRepo {
     }
 
     async fn find_by_person_id(
-        &mut self,
+        &self,
         person_id: person::EntityId,
     ) -> Result<Option<Entity>, anyhow::Error> {
         let select = self
@@ -184,7 +184,7 @@ impl teacher::Repo for PgTeacherRepo {
     }
 
     async fn list_by_department_id(
-        &mut self,
+        &self,
         department_id: subdivision::EntityId,
     ) -> Result<Vec<Entity>, anyhow::Error> {
         let select = self

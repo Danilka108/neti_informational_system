@@ -68,7 +68,7 @@ impl discipline::Repo for PgDisciplineRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let mut query = Query::select();
         query
             .from(DisciplinesIden::Table)
@@ -79,7 +79,7 @@ impl discipline::Repo for PgDisciplineRepo {
         Ok(model.map(Into::into))
     }
 
-    async fn find_by_name(&mut self, name: String) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find_by_name(&self, name: String) -> Result<Option<Entity>, anyhow::Error> {
         let mut query = Query::select();
         query
             .from(DisciplinesIden::Table)
@@ -91,7 +91,7 @@ impl discipline::Repo for PgDisciplineRepo {
     }
 
     async fn list_by_department_id(
-        &mut self,
+        &self,
         department_id: subdivision::EntityId,
     ) -> Result<Vec<Entity>, anyhow::Error> {
         let mut query = Query::select();

@@ -1,17 +1,7 @@
-use utils::{
-    entity::{entity_method, ProvideId},
-    outcome::Outcome,
-    // repo::{self, BaseRepo},
-};
-
-use crate::{user, AdaptersModule, AppModule};
-
-// mod exception;
+use crate::user;
 
 mod number;
 mod repo;
-
-// pub use exception::Exception;
 
 pub use repo::Repo;
 pub type BoxedRepo = Box<dyn Repo + Send + Sync>;
@@ -39,51 +29,3 @@ pub enum Gender {
     Male,
     Female,
 }
-
-// #[async_trait::async_trait]
-// pub trait Repo: BaseRepo<Entity> {
-//     async fn list_by_person(
-//         &self,
-//         person_id: &user::EntityId,
-//     ) -> Outcome<Vec<Entity>, repo::ex::Exception<Entity>>;
-// }
-
-// impl Entity {
-//     #[entity_method(ctx)]
-//     pub async fn create<A: AdaptersModule>(self, ctx: AppModule<A>) -> Outcome<Self, Exception> {
-//         let mut repo = ctx.adapters.resolve::<BoxedRepo>();
-//         repo.insert(self).await.map_repo_ex()
-//     }
-
-//     #[entity_method(ctx)]
-//     pub async fn get<A: AdaptersModule>(
-//         ctx: AppModule<A>,
-//         id: impl ProvideId<Self> + Send + Sync,
-//     ) -> Outcome<Self, Exception> {
-//         let repo = ctx.adapters.resolve::<BoxedRepo>();
-//         repo.find(id.provide_id()).await.map_repo_ex()
-//     }
-
-//     #[entity_method(ctx)]
-//     pub async fn list_by_person<A: AdaptersModule>(
-//         ctx: AppModule<A>,
-//         person_id: impl ProvideId<user::Entity> + Send + Sync,
-//     ) -> Outcome<Vec<Entity>, Exception> {
-//         let repo = ctx.adapters.resolve::<BoxedRepo>();
-//         repo.list_by_person(person_id.provide_id())
-//             .await
-//             .map_repo_ex()
-//     }
-
-//     #[entity_method(ctx)]
-//     pub async fn update<A: AdaptersModule>(self, ctx: AppModule<A>) -> Outcome<Self, Exception> {
-//         let mut repo = ctx.adapters.resolve::<BoxedRepo>();
-//         repo.update(self).await.map_repo_ex()
-//     }
-
-//     #[entity_method(ctx)]
-//     pub async fn delete<A: AdaptersModule>(self, ctx: AppModule<A>) -> Outcome<Self, Exception> {
-//         let mut repo = ctx.adapters.resolve::<BoxedRepo>();
-//         repo.delete(&self.id).await.map_repo_ex()
-//     }
-// }

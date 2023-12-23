@@ -1,27 +1,35 @@
-use utils::{di::Provide, outcome::Outcome};
+use utils::{
+    di::{Module, Provide},
+    entity::Id,
+    outcome::Outcome,
+};
 
 use crate::{
-    token::{self, BoxedAccessTokenEngine, BoxedRefreshTokenGenerator},
-    user,
-    user_session::{self, SecondsFromUnixEpoch},
+    token::{AccessTokenTTL, BoxedAccessTokenEngine, Claims},
+    user_service::{UserException, UserService},
+    user_session::SecondsFromUnixEpoch,
     AdaptersModule, AppModule,
 };
 
 #[derive(Debug, thiserror::Error)]
 pub enum Exception {
     #[error(transparent)]
-    UserException(#[from] user::Exception),
-    #[error(transparent)]
-    SessionException(#[from] user_session::Exception),
+    UserException(#[from] UserException),
 }
 
-pub struct AuthService<A> {
-    ctx: AppModule<A>,
+pub struct AuthService {
+    user_service: UserService,
+    access_token_engine: BoxedAccessTokenEngine,
+    access_token_ttl: AccessTokenTTL,
 }
 
-impl<A: AdaptersModule + Clone> Provide<AuthService<A>> for AppModule<A> {
-    fn provide(&self) -> AuthService<A> {
-        AuthService { ctx: self.clone() }
+impl<A: AdaptersModule> Provide<AuthService> for AppModule<A> {
+    fn provide(&self) -> AuthService {
+        AuthService {
+            user_service: self.resolve(),
+            access_token_engine: self.adapters.resolve(),
+            access_token_ttl: self.adapters.resolve(),
+        }
     }
 }
 
@@ -30,37 +38,28 @@ pub struct Tokens {
     pub refresh_token: String,
 }
 
-impl<A: AdaptersModule + Clone + Sync> AuthService<A> {
+impl AuthService {
     pub async fn login(
-        self,
+        &mut self,
         email: String,
         password: String,
         session_metadata: String,
     ) -> Outcome<Tokens, Exception> {
-        let refersh_token_generator: BoxedRefreshTokenGenerator = self.ctx.adapters.resolve();
-        let token::AccessTokenTTL(access_token_ttl) = self.ctx.adapters.resolve();
-        let access_token_engine: BoxedAccessTokenEngine = self.ctx.adapters.resolve();
+        let AccessTokenTTL(access_token_ttl) = self.access_token_ttl;
 
-        let user = user::Entity::get_by_email(email)
-            .exec(self.ctx.clone())
+        let user = self.user_service.authenticate(email, password).await?;
+        let session = self
+            .user_service
+            .create_session(user.id, session_metadata)
             .await?;
 
-        user.validate_password(&password)
-            .exec(self.ctx.clone())
-            .await?;
-
-        let refresh_token = refersh_token_generator.generate().await?;
-
-        let access_token = access_token_engine
-            .encode(token::Claims {
-                user_id: user.id().value,
-                email: user.email().to_owned(),
+        let access_token = self
+            .access_token_engine
+            .encode(Claims {
+                user_id: user.id.value,
+                email: user.email,
                 expires_at: SecondsFromUnixEpoch::expired_at_from_ttl(access_token_ttl)?,
             })
-            .await?;
-
-        let session = user_session::Entity::save(user.id(), session_metadata, refresh_token)
-            .exec(self.ctx.clone())
             .await?;
 
         Outcome::Ok(Tokens {
@@ -70,34 +69,27 @@ impl<A: AdaptersModule + Clone + Sync> AuthService<A> {
     }
 
     pub async fn refresh_token(
-        self,
+        &mut self,
         user_id: i32,
         refresh_token_to_validate: String,
         session_metadata: String,
     ) -> Outcome<Tokens, Exception> {
-        let refresh_token_generator: BoxedRefreshTokenGenerator = self.ctx.adapters.resolve();
-        let access_token_engine: BoxedAccessTokenEngine = self.ctx.adapters.resolve();
-        let token::AccessTokenTTL(access_token_ttl) = self.ctx.adapters.resolve();
+        let AccessTokenTTL(access_token_ttl) = self.access_token_ttl;
 
-        let user = user::Entity::get(user_id).exec(self.ctx.clone()).await?;
+        let user = self.user_service.get(Id::new(user_id)).await?;
+        let session = self
+            .user_service
+            .update_session(user.id, session_metadata, refresh_token_to_validate)
+            .await?;
 
-        let refresh_token = refresh_token_generator.generate().await?;
-        let access_token = access_token_engine
-            .encode(token::Claims {
-                user_id,
-                email: user.email().to_owned(),
+        let access_token = self
+            .access_token_engine
+            .encode(Claims {
+                user_id: user.id.value,
+                email: user.email,
                 expires_at: SecondsFromUnixEpoch::expired_at_from_ttl(access_token_ttl)?,
             })
             .await?;
-
-        let session = user_session::Entity::update(
-            user.id(),
-            session_metadata,
-            refresh_token_to_validate,
-            refresh_token,
-        )
-        .exec(self.ctx.clone())
-        .await?;
 
         Outcome::Ok(Tokens {
             access_token,
@@ -106,17 +98,16 @@ impl<A: AdaptersModule + Clone + Sync> AuthService<A> {
     }
 
     pub async fn logout(
-        self,
+        &mut self,
         user_id: i32,
-        refresh_token_to_validate: String,
         session_metadata: String,
+        refresh_token_to_validate: String,
     ) -> Outcome<(), Exception> {
-        let user = user::Entity::get(user_id).exec(self.ctx.clone()).await?;
-
-        let _deleted_session =
-            user_session::Entity::remove(user.id(), session_metadata, refresh_token_to_validate)
-                .exec(self.ctx.clone())
-                .await?;
+        let user = self.user_service.get(Id::new(user_id)).await?;
+        let _removed_session = self
+            .user_service
+            .remove_session(user.id, session_metadata, refresh_token_to_validate)
+            .await?;
 
         Outcome::Ok(())
     }

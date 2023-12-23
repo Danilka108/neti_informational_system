@@ -1,4 +1,7 @@
-use super::HashedPassword;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HashedPassword {
+    pub value: String,
+}
 
 pub type BoxedPasswordHasher = Box<dyn PasswordHasher + Send + Sync>;
 

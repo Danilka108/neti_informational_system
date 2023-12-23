@@ -21,8 +21,8 @@ impl PgPersonRepo {
         let mut query = Query::insert();
         let query = query
             .into_table(PersonsIden::Table)
-            .columns([PersonsIden::UserId])
-            .values_panic([entity.user_id.value.into()])
+            .columns([PersonsIden::UserId, PersonsIden::FullName])
+            .values_panic([entity.user_id.value.into(), entity.full_name.into()])
             .returning_all();
 
         fetch_one(&self.txn, query).await
@@ -32,7 +32,10 @@ impl PgPersonRepo {
         let mut query = Query::update();
         let query = query
             .table(PersonsIden::Table)
-            .values([(PersonsIden::UserId, entity.user_id.value.into())])
+            .values([
+                (PersonsIden::UserId, entity.user_id.value.into()),
+                (PersonsIden::FullName, entity.full_name.into()),
+            ])
             .and_where(Expr::col(PersonsIden::Id).is(entity.id.value))
             .returning_all();
 
@@ -60,7 +63,7 @@ impl person::Repo for PgPersonRepo {
         fetch_one::<()>(&self.txn, query).await
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let mut query = Query::select();
         let query = query
             .from(PersonsIden::Table)
@@ -71,7 +74,7 @@ impl person::Repo for PgPersonRepo {
     }
 
     async fn find_by_user_id(
-        &mut self,
+        &self,
         user_id: user::EntityId,
     ) -> Result<Option<Entity>, anyhow::Error> {
         let mut query = Query::select();

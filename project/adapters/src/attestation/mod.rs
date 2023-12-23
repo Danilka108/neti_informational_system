@@ -158,7 +158,7 @@ impl attestation::Repo for PgAttestationRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let select = self
             .select(Expr::col((AttestationsIden::Table, AttestationsIden::Id)).is(id.value))
             .await?;
@@ -168,7 +168,7 @@ impl attestation::Repo for PgAttestationRepo {
     }
 
     async fn find_by_curriculum_module(
-        &mut self,
+        &self,
         curriculum_module_id: curriculum_module::EntityId,
     ) -> Result<Option<Entity>, anyhow::Error> {
         let select = self
@@ -186,8 +186,8 @@ impl attestation::Repo for PgAttestationRepo {
     }
 
     async fn list_by_examiners(
-        &mut self,
-        examiners_ids: impl IntoIterator<Item = teacher::EntityId> + Send,
+        &self,
+        examiners_ids: HashSet<teacher::EntityId>,
     ) -> Result<Vec<Entity>, anyhow::Error> {
         let mut cond = Condition::all();
 

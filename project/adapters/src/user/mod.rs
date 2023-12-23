@@ -67,7 +67,7 @@ impl user::Repo for PgUserRepo {
         Ok(())
     }
 
-    async fn find(&mut self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error> {
         let res = fetch_optional::<Users>(
             &self.txn,
             Query::select()
@@ -80,7 +80,7 @@ impl user::Repo for PgUserRepo {
         Ok(res.map(Into::into))
     }
 
-    async fn find_by_email(&mut self, email: String) -> Result<Option<Entity>, anyhow::Error> {
+    async fn find_by_email(&self, email: String) -> Result<Option<Entity>, anyhow::Error> {
         let res = fetch_optional::<Users>(
             &self.txn,
             Query::select()
