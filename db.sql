@@ -54,7 +54,9 @@ create table passports(
   date_of_issue timestamp not null,
   number varchar(6) not null,
   series varchar(4) not null,
-  gender gender not null
+  gender gender not null,
+
+  unique(number, series)
 );
 
 create table universities

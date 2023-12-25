@@ -1,0 +1,5 @@
+[v1]
+"cargo-make 0.37.5 (registry+https://github.com/rust-lang/crates.io-index)" = [
+    "cargo-make",
+    "makers",
+]
