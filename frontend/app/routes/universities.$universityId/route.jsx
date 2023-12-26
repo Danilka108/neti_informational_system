@@ -1,4 +1,4 @@
-import { Box, Tab, Typography, Tabs, Stack, Paper, Divider } from "@mui/material";
+import { Box, Tab, Typography, Tabs, Stack, Paper, Divider, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from "@mui/material";
 import { Link, Outlet, useLoaderData, useMatches, useParams } from "@remix-run/react"
 import { useState } from "react";
 import { API_HOST } from "../../root";
@@ -66,11 +66,11 @@ export default function University() {
   return (
     <Stack direction="column" sx={{ height: "100%", overflow: "clip", }}>
       <Stack direction="column" justifyContent="center">
-        <Typography variant="h6" sx={{ padding: "10px", paddingBottom: "0px", textTransform: "uppercase", display: "flex", justifyContent: "left", alignItems: "center", textAlign: "center" }}>
-          university "{universityName}"
-        </Typography>
-        <Typography color="blue" variant="subtitle1" component={Link} to="/universities" style={{ textTransform: "lowercase", padding: "0", textDecoration: "underline", display: "inline-block", marginLeft: "10px" }}>
+        <Typography color="blue" variant="subtitle1" component={Link} to="/universities" style={{ paddingTop: "0", textTransform: "lowercase", padding: "0", textDecoration: "underline", display: "inline-block", marginLeft: "10px" }}>
           change university
+        </Typography>
+        <Typography variant="h6" sx={{ padding: "10px", paddingBottom: "0px", paddingTop: "0", textTransform: "uppercase", display: "flex", justifyContent: "left", alignItems: "center", textAlign: "center" }}>
+          university "{universityName}"
         </Typography>
         <Divider />
       </Stack>

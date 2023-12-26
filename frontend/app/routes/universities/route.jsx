@@ -15,8 +15,8 @@ export default function University() {
   };
 
   return (
-    <Stack key={universityId} style={{ height: "100vh" }}>
-      <Outlet style={{ height: "100vh" }} />
+    <Stack key={universityId} style={{ height: "100%" }}>
+      <Outlet style={{ height: "100%" }} />
     </Stack>
     // <div >
     //   <Stack height="100%" display="flex" direction="column">
