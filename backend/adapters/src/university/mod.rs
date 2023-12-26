@@ -5,7 +5,7 @@ use sea_query::{Asterisk, Expr, Query};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::{fetch_one, fetch_optional, PgTransaction};
+use crate::{fetch_all, fetch_one, fetch_optional, PgTransaction};
 
 use self::model::{Universities, UniversitiesIden};
 
@@ -72,6 +72,21 @@ impl university::Repo for PgUniversityRepo {
         .await?;
 
         Ok(model.map(Into::into))
+    }
+
+    async fn list(&self) -> Result<Vec<Entity>, anyhow::Error> {
+        let entities = fetch_all::<Universities>(
+            &self.txn,
+            Query::select()
+                .from(UniversitiesIden::Table)
+                .column(Asterisk),
+        )
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect();
+
+        Ok(entities)
     }
 
     async fn find_by_name(&self, name: String) -> Result<Option<Entity>, anyhow::Error> {

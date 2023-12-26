@@ -1,6 +1,7 @@
 #![feature(iterator_try_collect)]
 #![feature(try_trait_v2)]
 
+use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 mod api_state;
@@ -11,6 +12,8 @@ mod utils;
 #[tokio::main]
 async fn main() {
     dotenv::from_path(".env").unwrap();
+
+    let cors_middleware = CorsLayer::new().allow_headers(Any).allow_origin(Any);
 
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::from_default_env())
@@ -40,9 +43,9 @@ async fn main() {
         }
     };
 
-    let api = handlers::router(api_state);
+    let api = handlers::router(api_state).layer(cors_middleware);
 
-    axum::Server::bind(&"127.0.0.1:3000".parse().unwrap())
+    axum::Server::bind(&"127.0.0.1:4000".parse().unwrap())
         .serve(api.into_make_service())
         .await
         .unwrap();

@@ -14,7 +14,7 @@ use tokio::sync::Mutex;
 use crate::{fetch_all, fetch_one, PgTransaction};
 
 use self::model::{
-    JoinRow, PgTeacherKind, TeacherClasses, TeacherClassesIden, Teachers, TeachersIden,
+    ClassTeachers, ClassTeachersIden, JoinRow, PgTeacherKind, Teachers, TeachersIden,
 };
 
 pub struct PgTeacherRepo {
@@ -66,8 +66,8 @@ impl PgTeacherRepo {
     async fn select(&self, cond: impl IntoCondition) -> Result<Vec<JoinRow>, anyhow::Error> {
         let teacher_table = TeachersIden::Table;
         let teacher_id = TeachersIden::Id;
-        let class_table = TeacherClassesIden::Table;
-        let class_teacher_id = TeacherClassesIden::TeacherId;
+        let class_table = ClassTeachersIden::Table;
+        let class_teacher_id = ClassTeachersIden::TeacherId;
 
         let on = Expr::col((teacher_table, teacher_id)).equals((class_table, class_teacher_id));
 
@@ -98,8 +98,8 @@ impl PgTeacherRepo {
     async fn delete_classes(&self, id: i32) -> Result<(), anyhow::Error> {
         let mut query = Query::delete();
         query
-            .from_table(TeacherClassesIden::Table)
-            .and_where(Expr::col(TeacherClassesIden::TeacherId).eq(id));
+            .from_table(ClassTeachersIden::Table)
+            .and_where(Expr::col(ClassTeachersIden::TeacherId).eq(id));
 
         fetch_one::<()>(&self.txn, &query).await
     }
@@ -108,17 +108,17 @@ impl PgTeacherRepo {
         &self,
         id: i32,
         classes: HashSet<teacher::TeacherClass>,
-    ) -> Result<Vec<TeacherClasses>, anyhow::Error> {
+    ) -> Result<Vec<ClassTeachers>, anyhow::Error> {
         let mut models = Vec::new();
 
         for class in classes {
             let mut query = Query::insert();
             query
-                .into_table(TeacherClassesIden::Table)
+                .into_table(ClassTeachersIden::Table)
                 .columns([
-                    TeacherClassesIden::TeacherId,
-                    TeacherClassesIden::ClassId,
-                    TeacherClassesIden::StudyGroupId,
+                    ClassTeachersIden::TeacherId,
+                    ClassTeachersIden::ClassId,
+                    ClassTeachersIden::StudyGroupId,
                 ])
                 .values_panic([
                     id.into(),
@@ -127,7 +127,7 @@ impl PgTeacherRepo {
                 ])
                 .returning_all();
 
-            let model = fetch_one::<TeacherClasses>(&self.txn, &query).await?;
+            let model = fetch_one::<ClassTeachers>(&self.txn, &query).await?;
             models.push(model);
         }
 

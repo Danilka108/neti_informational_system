@@ -18,6 +18,7 @@ CREATE TYPE training_kind AS enum ('full_time', 'correspondence');
 
 CREATE TYPE attestation_kind AS enum ('test', 'diff_test', 'exam');
 
+-- TODO use left join instead of inner join in queries
 
 create table users (
   id serial primary key,

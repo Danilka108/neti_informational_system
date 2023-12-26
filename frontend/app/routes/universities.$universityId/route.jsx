@@ -1,6 +1,7 @@
 import { Box, Tab, Typography, Tabs, Stack, Paper, Divider } from "@mui/material";
-import { Link, Outlet, useMatches, useParams } from "@remix-run/react"
+import { Link, Outlet, useLoaderData, useMatches, useParams } from "@remix-run/react"
 import { useState } from "react";
+import { API_HOST } from "../../root";
 
 const tabs = [
   {
@@ -21,8 +22,21 @@ const tabs = [
   },
 ];
 
+export const loader = async ({ params }) => {
+  const response = await fetch(API_HOST + `/universities/${params.universityId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const data = await response.json();
+  return data
+
+}
+
 export default function University() {
-  const { universityId } = useParams();
+  const { name: universityName } = useLoaderData();
   const matches = useMatches();
   const { pathname } = matches[3];
   const element = pathname.split("/")[3];
@@ -51,18 +65,21 @@ export default function University() {
 
   return (
     <Stack direction="column" sx={{ height: "100%", overflow: "clip", }}>
-      <Box>
-        <Typography variant="h6" sx={{ padding: "10px", textTransform: "uppercase", display: "flex", justifyContent: "left", alignItems: "center", textAlign: "center" }}>
-          university "{universityId}"
+      <Stack direction="column" justifyContent="center">
+        <Typography variant="h6" sx={{ padding: "10px", paddingBottom: "0px", textTransform: "uppercase", display: "flex", justifyContent: "left", alignItems: "center", textAlign: "center" }}>
+          university "{universityName}"
+        </Typography>
+        <Typography color="blue" variant="subtitle1" component={Link} to="/universities" style={{ textTransform: "lowercase", padding: "0", textDecoration: "underline", display: "inline-block", marginLeft: "10px" }}>
+          change university
         </Typography>
         <Divider />
-      </Box>
+      </Stack>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
           {tabs_items}
         </Tabs>
       </Box>
-      <Box sx={{ flex: "1", overflow: "scroll", }}>
+      <Box sx={{ flex: "1", overflow: "scroll", display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", width: "100%" }}>
         <Outlet />
       </Box>
     </Stack>

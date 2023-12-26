@@ -4,7 +4,7 @@ use app::{
     curriculum,
     study_group::{self, Entity, EntityId},
 };
-use sea_query::{Asterisk, Condition, Expr, IntoCondition, Query};
+use sea_query::{Asterisk, Condition, ConditionalStatement, Expr, IntoCondition, Query, Value};
 use tokio::sync::Mutex;
 
 use self::models::{
@@ -190,6 +190,27 @@ impl study_group::Repo for PgStudyGroupRepo {
 
         let entity = Self::entity_from_select(select);
         Ok(entity)
+    }
+
+    async fn list(&self) -> Result<Vec<Entity>, anyhow::Error> {
+        let select = self.select(Expr::value(true)).await?;
+
+        let mut groups = HashMap::<i32, Vec<JoinRow>>::new();
+        for join_row in select {
+            groups
+                .entry(join_row.study_group.id)
+                .or_insert(vec![])
+                .push(join_row);
+        }
+
+        let entities = groups
+            .into_iter()
+            .map(|(_, v)| v)
+            .map(Self::entity_from_select)
+            .filter_map(|v| v)
+            .collect();
+
+        Ok(entities)
     }
 
     async fn list_by_curriculums(

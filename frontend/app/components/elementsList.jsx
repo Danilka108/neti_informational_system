@@ -10,7 +10,7 @@ export default function ElementsList({ defaultId, elements, label }) {
     return (
       <Box key={index}>
         <ListItemButton onClick={(_) => setSelectedId(item.id)} selected={item.id == selectedId} component={Link} to={`${item.id}`}>
-          <Typography sx={{ display: "flex", justifyContent: "left", alignItems: "center", textAlign: "center" }} variant="subtitle1">
+          <Typography sx={{ display: "flex", justifyContent: "left", alignItems: "center", textAlign: "center", whiteSpace: "nowrap" }} variant="subtitle1">
             {item.name}
           </Typography>
         </ListItemButton>
@@ -20,9 +20,9 @@ export default function ElementsList({ defaultId, elements, label }) {
   })
 
   return (
-    <Stack direction="row" height="100%">
+    <Stack direction="row" height="100%" style={{ width: "100%" }}>
       <Stack>
-        <Typography sx={{ padding: "0.5em 1.5em 0.5em 1.5em", fontWeight: "normal", display: "flex", flexDirection: "row", justifyContent: "left", alignItems: "left" }} variant="subtitle1">
+        <Typography sx={{ whiteSpace: "nowrap", padding: "0.5em 1.5em 0.5em 1.5em", fontWeight: "normal", display: "flex", flexDirection: "row", justifyContent: "left", alignItems: "left" }} variant="subtitle1">
           {label}
         </Typography>
         <Divider />
@@ -31,7 +31,7 @@ export default function ElementsList({ defaultId, elements, label }) {
         </List>
       </Stack>
       <Paper style={{ width: "100%", height: "100%", overflow: "clip", display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-        <Outlet key={defaultId} style={{}} />
+        <Outlet key={defaultId} />
       </Paper>
     </Stack>
   )

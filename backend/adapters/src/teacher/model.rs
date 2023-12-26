@@ -15,7 +15,7 @@ pub struct Teachers {
 
 #[derive(Clone, Debug, FromRow)]
 #[sea_query::enum_def]
-pub struct TeacherClasses {
+pub struct ClassTeachers {
     pub teacher_id: i32,
     pub study_group_id: i32,
     pub class_id: i32,
@@ -26,11 +26,11 @@ pub struct JoinRow {
     #[sqlx(flatten)]
     pub teacher: Teachers,
     #[sqlx(flatten)]
-    pub class: TeacherClasses,
+    pub class: ClassTeachers,
 }
 
 impl Teachers {
-    pub fn into_entity(self, classes: Vec<TeacherClasses>) -> teacher::Entity {
+    pub fn into_entity(self, classes: Vec<ClassTeachers>) -> teacher::Entity {
         teacher::Entity {
             id: Id::new(self.id),
             person_id: Id::new(self.person_id),
@@ -50,22 +50,23 @@ impl Teachers {
 #[derive(Debug, Clone, sqlx::Type)]
 #[sqlx(type_name = "teacher_kind")]
 #[sqlx(rename_all = "lowercase")]
+// TODO
 pub enum PgTeacherKind {
-    Assistant,
-    RegularTeacher,
-    SeniorTeacher,
-    AssociateProfessor,
-    Professor,
+    assistant,
+    regular_teacher,
+    senior_teacher,
+    associate_professor,
+    professor,
 }
 
 impl From<TeacherKind> for PgTeacherKind {
     fn from(value: TeacherKind) -> Self {
         match value {
-            TeacherKind::Assistant => PgTeacherKind::Assistant,
-            TeacherKind::RegularTeacher => PgTeacherKind::RegularTeacher,
-            TeacherKind::SeniorTeacher => PgTeacherKind::SeniorTeacher,
-            TeacherKind::AssociateProfessor => PgTeacherKind::AssociateProfessor,
-            TeacherKind::Professor => PgTeacherKind::Professor,
+            TeacherKind::Assistant => PgTeacherKind::assistant,
+            TeacherKind::RegularTeacher => PgTeacherKind::regular_teacher,
+            TeacherKind::SeniorTeacher => PgTeacherKind::senior_teacher,
+            TeacherKind::AssociateProfessor => PgTeacherKind::associate_professor,
+            TeacherKind::Professor => PgTeacherKind::professor,
         }
     }
 }
@@ -73,11 +74,11 @@ impl From<TeacherKind> for PgTeacherKind {
 impl From<PgTeacherKind> for TeacherKind {
     fn from(value: PgTeacherKind) -> Self {
         match value {
-            PgTeacherKind::Assistant => TeacherKind::Assistant,
-            PgTeacherKind::RegularTeacher => TeacherKind::RegularTeacher,
-            PgTeacherKind::SeniorTeacher => TeacherKind::SeniorTeacher,
-            PgTeacherKind::AssociateProfessor => TeacherKind::AssociateProfessor,
-            PgTeacherKind::Professor => TeacherKind::Professor,
+            PgTeacherKind::assistant => TeacherKind::Assistant,
+            PgTeacherKind::regular_teacher => TeacherKind::RegularTeacher,
+            PgTeacherKind::senior_teacher => TeacherKind::SeniorTeacher,
+            PgTeacherKind::associate_professor => TeacherKind::AssociateProfessor,
+            PgTeacherKind::professor => TeacherKind::Professor,
         }
     }
 }
@@ -87,11 +88,11 @@ impl Display for PgTeacherKind {
             f,
             "{}",
             match self {
-                PgTeacherKind::Assistant => "assistant",
-                PgTeacherKind::RegularTeacher => "regular_teacher",
-                PgTeacherKind::SeniorTeacher => "senior_teacher",
-                PgTeacherKind::AssociateProfessor => "associate_professor",
-                PgTeacherKind::Professor => "professor",
+                PgTeacherKind::assistant => "assistant",
+                PgTeacherKind::regular_teacher => "regular_teacher",
+                PgTeacherKind::senior_teacher => "senior_teacher",
+                PgTeacherKind::associate_professor => "associate_professor",
+                PgTeacherKind::professor => "professor",
             }
         )
     }

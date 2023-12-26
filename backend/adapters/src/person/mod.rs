@@ -1,4 +1,4 @@
-use crate::{fetch_one, fetch_optional, person::models::PersonsIden, PgTransaction};
+use crate::{fetch_all, fetch_one, fetch_optional, person::models::PersonsIden, PgTransaction};
 
 mod models;
 
@@ -6,7 +6,7 @@ use app::{
     person::{self, Entity, EntityId},
     user,
 };
-use sea_query::{Expr, Query};
+use sea_query::{Asterisk, Expr, Query};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -67,6 +67,7 @@ impl person::Repo for PgPersonRepo {
         let mut query = Query::select();
         let query = query
             .from(PersonsIden::Table)
+            .column(Asterisk)
             .and_where(Expr::col(PersonsIden::Id).eq(id.value));
 
         let model = fetch_optional::<Persons>(&self.txn, query).await?;
@@ -80,9 +81,22 @@ impl person::Repo for PgPersonRepo {
         let mut query = Query::select();
         let query = query
             .from(PersonsIden::Table)
+            .column(Asterisk)
             .and_where(Expr::col(PersonsIden::UserId).eq(user_id.value));
 
         let model = fetch_optional::<Persons>(&self.txn, query).await?;
         Ok(model.map(Into::into))
+    }
+
+    async fn list(&self) -> Result<Vec<Entity>, anyhow::Error> {
+        let mut query = Query::select();
+        let query = query.from(PersonsIden::Table).column(Asterisk);
+
+        let entities = fetch_all::<Persons>(&self.txn, query)
+            .await?
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        Ok(entities)
     }
 }

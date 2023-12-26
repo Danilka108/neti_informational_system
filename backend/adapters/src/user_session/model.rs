@@ -8,7 +8,7 @@ pub struct UserSessions {
     pub user_id: i32,
     pub metadata: String,
     pub refresh_token: String,
-    pub expires_at: i32,
+    pub expires_at: i64,
 }
 
 impl From<UserSessions> for user_session::Entity {

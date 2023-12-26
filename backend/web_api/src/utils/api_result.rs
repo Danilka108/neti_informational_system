@@ -16,7 +16,10 @@ impl ApiResult {
     }
 }
 
-pub(super) fn anyhow_error_into_response(_: anyhow::Error) -> Response {
+#[tracing::instrument(skip_all)]
+pub(super) fn anyhow_error_into_response(error: anyhow::Error) -> Response {
+    tracing::error!(?error);
+
     (
         StatusCode::INTERNAL_SERVER_ERROR,
         Reply {

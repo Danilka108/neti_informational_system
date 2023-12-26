@@ -28,8 +28,10 @@ impl<A: AdaptersModule> Provide<UserService> for AppModule<A> {
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum UserException {
-    #[error("email already in use or invalid passport")]
-    EmailAlreadyInUseOrInvalidPassport,
+    #[error("email already in use")]
+    EmailAlreadyInUse,
+    #[error("invalid email or password")]
+    InvalidEmailOrPassword,
     #[error("user not found")]
     UserNotFound,
     // #[error("invalid password")]
@@ -51,7 +53,7 @@ impl UserService {
         password: String,
     ) -> Outcome<user::Entity, UserException> {
         if self.repo.find_by_email(email.clone()).await?.is_some() {
-            return Outcome::Ex(UserException::EmailAlreadyInUseOrInvalidPassport);
+            return Outcome::Ex(UserException::EmailAlreadyInUse);
         }
 
         let user = user::Entity {
@@ -70,12 +72,11 @@ impl UserService {
         password: String,
     ) -> Outcome<user::Entity, UserException> {
         let Some(user) = self.repo.find_by_email(email).await? else {
-            return Outcome::Ex(UserException::UserNotFound);
+            return Outcome::Ex(UserException::InvalidEmailOrPassword);
         };
 
-        let hashed_password = self.hasher.hash(password).await?;
-        if user.password != hashed_password {
-            return Outcome::Ex(UserException::EmailAlreadyInUseOrInvalidPassport);
+        if !self.hasher.is_matches(&password, &user.password).await? {
+            return Outcome::Ex(UserException::InvalidEmailOrPassword);
         }
 
         Outcome::Ok(user)

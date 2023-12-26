@@ -8,5 +8,7 @@ pub trait Repo {
 
     async fn find(&self, id: EntityId) -> Result<Option<Entity>, anyhow::Error>;
 
+    async fn list(&self) -> Result<Vec<Entity>, anyhow::Error>;
+
     async fn find_by_name(&self, name: String) -> Result<Option<Entity>, anyhow::Error>;
 }

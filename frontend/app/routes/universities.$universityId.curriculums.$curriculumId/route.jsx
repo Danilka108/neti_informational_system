@@ -1,75 +1,85 @@
 import { Divider, List, ListItem, ListItemButton, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { Link, json, useLoaderData, useParams } from "@remix-run/react";
+import { API_HOST } from "../../root";
 
-const curriculum = {
-  name: "avt-113 avt-114 2021",
-  studyGroups: [
-    {
-      id: 0,
-      name: "avt-113"
-    },
-    {
-      id: 1,
-      name: "avt-114"
-    }
-  ],
-  semesters: [
-    {
-      value: 1,
-      modules: [
-        {
-          disciplineName: "informatics",
-          departmentName: "asu",
-          "departmentId": 0,
-        },
-        {
-          disciplineName: "programing",
-          departmentName: "asu",
-          departmentId: 0,
-        },
-      ]
-    },
-    {
-      value: 2,
-      modules: [
-        {
-          disciplineName: "networks",
-          departmentName: "someone else",
-          "departmentId": 1,
-        },
-      ]
-    },
-  ]
+// const curriculum = {
+//   name: "avt-113 avt-114 2021",
+//   studyGroups: [
+//     {
+//       id: 0,
+//       name: "avt-113"
+//     },
+//     {
+//       id: 1,
+//       name: "avt-114"
+//     }
+//   ],
+//   semesters: [
+//     {
+//       value: 1,
+//       modules: [
+//         {
+//           disciplineName: "informatics",
+//           departmentName: "asu",
+//           "departmentId": 0,
+//         },
+//         {
+//           disciplineName: "programing",
+//           departmentName: "asu",
+//           departmentId: 0,
+//         },
+//       ]
+//     },
+//     {
+//       value: 2,
+//       modules: [
+//         {
+//           disciplineName: "networks",
+//           departmentName: "someone else",
+//           "departmentId": 1,
+//         },
+//       ]
+//     },
+//   ]
 
-}
+// }
 
 export const loader = async ({ params }) => {
-  // TODO do request to api
-  return json(curriculum);
+  const response = await fetch(API_HOST + `/curriculums/${params.curriculumId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const data = await response.json();
+  return data
 };
 
 export default function SelectedCurriculum() {
-  const { universityId, curriculumId } = useParams();
+  const { universityId } = useParams();
   const data = useLoaderData();
+  // console.log(data);
+  // return <div></div>
 
   const studyGroups = data.studyGroups.map((item, index) => {
-    const to = `/universities/${universityId}/curriculums/${curriculumId}/study_groups/${item.id}`;
+    const to = `/universities/${universityId}/study_groups/${item.id}`;
     return (
-      <Typography color="blue" variant="subtitle1" component={Link} to={to} style={{ textTransform: "lowercase", padding: "0", textDecoration: "underline", display: "inline-block" }}>
+      <Typography key={index} color="blue" variant="subtitle1" component={Link} to={to} style={{ textTransform: "lowercase", padding: "0", textDecoration: "underline", display: "inline-block" }}>
         {item.name}
       </Typography>
     );
   });
 
-  const semesters = data.semesters.map((semester, semesteIndex) => {
+  const semesters = data.semesters.map((semester, semesterIndex) => {
     const rows = semester.modules.map((module, moduleIndex) => {
       const to = `/universities/${universityId}/subdivisions/${module.departmentId}`;
 
       return (
-        <TableRow>
+        <TableRow key={moduleIndex}>
           <TableCell>{module.disciplineName}</TableCell>
           <TableCell>
-            <Typography color="blue" variant="subtitle1" component={Link} to={to} style={{ textTransform: "lowercase", padding: "0", textDecoration: "underline", display: "inline-block" }}>
+            <Typography key={moduleIndex} color="blue" variant="subtitle1" component={Link} to={to} style={{ textTransform: "lowercase", padding: "0", textDecoration: "underline", display: "inline-block" }}>
               {module.departmentName}
             </Typography>
           </TableCell>
@@ -78,11 +88,11 @@ export default function SelectedCurriculum() {
     });
 
     return (
-      <Stack direction="column" sx={{ marginTop: "10px", maxWidth: "40em", }}>
+      <Stack key={semesterIndex} direction="column" sx={{ marginTop: "10px", maxWidth: "40em", }}>
         <Typography variant="h6">
           semester {semester.value}
         </Typography>
-        <Table aria-lable={`semester ${semester.value}`}>
+        <Table>
           <TableHead>
             <TableRow>
               <TableCell>discipline name</TableCell>

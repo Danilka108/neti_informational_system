@@ -5,7 +5,9 @@ use sea_query::{Asterisk, Expr, Query};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::{curriculum::model::CurriculumsIden, fetch_one, fetch_optional, PgTransaction};
+use crate::{
+    curriculum::model::CurriculumsIden, fetch_all, fetch_one, fetch_optional, PgTransaction,
+};
 
 use self::model::Curriculums;
 
@@ -71,6 +73,18 @@ impl curriculum::Repo for PgCurriculumRepo {
             .map(Into::into);
 
         Ok(entity)
+    }
+    async fn list(&self) -> Result<Vec<Entity>, anyhow::Error> {
+        let mut query = Query::select();
+        query.from(CurriculumsIden::Table).column(Asterisk);
+
+        let entities = fetch_all::<Curriculums>(&self.txn, &query)
+            .await?
+            .into_iter()
+            .map(Into::into)
+            .collect();
+
+        Ok(entities)
     }
 
     async fn find_by_name(&self, name: String) -> Result<Option<Entity>, anyhow::Error> {

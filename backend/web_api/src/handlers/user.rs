@@ -31,7 +31,8 @@ impl IntoResponse for Exception {
         // tracing::info!(?ex, "exception was thrown");
         let code = match ex {
             UserException::UserNotFound => StatusCode::BAD_REQUEST,
-            UserException::EmailAlreadyInUseOrInvalidPassport => StatusCode::UNAUTHORIZED,
+            UserException::EmailAlreadyInUse => StatusCode::BAD_REQUEST,
+            UserException::InvalidEmailOrPassword => StatusCode::UNAUTHORIZED,
             UserException::SessionExpired => StatusCode::UNAUTHORIZED,
             UserException::SessionNotFound => StatusCode::UNAUTHORIZED,
             UserException::InvalidRefreshToken => StatusCode::UNAUTHORIZED,

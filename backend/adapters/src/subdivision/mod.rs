@@ -130,13 +130,14 @@ impl PgSubdivisionRepo {
     // select * from subdivisions as s join (select m.subdivision_id, m.person_id, m.role, t.tag_name from subdivision_members as m full outer join subdivision_tags as t on m.subdivision_id = t.subdivision_id) as r on s.id = r.subdivision_id where s.x = y;
     async fn select(&self, cond: impl IntoCondition) -> Result<Vec<JoinRow>, anyhow::Error> {
         let subdivision_table = SubdivisionsIden::Table;
-        let subdivision_id = SubdivisionMembersIden::SubdivisionId;
+        let subdivision_id = SubdivisionsIden::Id;
+        let member_subdivision_id = SubdivisionMembersIden::SubdivisionId;
 
         let mut query = Query::select();
 
         let (subquery_alias, subquery) = Self::join_members_and_tags();
 
-        let on = Expr::col((subquery_alias.clone(), subdivision_id))
+        let on = Expr::col((subquery_alias.clone(), member_subdivision_id))
             .equals((subdivision_table, subdivision_id));
 
         query
@@ -165,11 +166,11 @@ impl PgSubdivisionRepo {
             .equals((tag_table, tag_subdivision_id));
 
         query
+            .from(member_table)
             .column((tag_table, tag_name))
             .column((member_table, member_role))
             .column((member_table, member_subdivision_id))
             .column((member_table, member_person_id))
-            .from(member_table)
             .full_outer_join(tag_table, on);
 
         (alias, query)
@@ -266,6 +267,26 @@ impl subdivision::Repo for PgSubdivisionRepo {
         Ok(entities)
     }
 
+    async fn list(&self) -> Result<Vec<Entity>, anyhow::Error> {
+        let results = self.select(Expr::value(true)).await?;
+
+        let mut groups = HashMap::<i32, Vec<JoinRow>>::new();
+        for result in results {
+            groups
+                .entry(result.subdivision.id)
+                .or_insert(vec![])
+                .push(result);
+        }
+
+        let entities = groups
+            .into_iter()
+            .map(|(_, v)| Self::entity_from_select(v))
+            .filter_map(|v| v)
+            .collect();
+
+        Ok(entities)
+    }
+
     async fn list_by_tags(
         &self,
         tags_ids: HashSet<tag::EntityId>,
@@ -304,10 +325,10 @@ impl subdivision::Repo for PgSubdivisionRepo {
         let mut cond = Condition::all();
         for person_id in persons_ids {
             cond = cond.add(
-                Expr::col((
-                    SubdivisionMembersIden::Table,
+                Expr::col(
+                    // SubdivisionMembersIden::Table,
                     SubdivisionMembersIden::PersonId,
-                ))
+                )
                 .eq(person_id.value),
             );
         }

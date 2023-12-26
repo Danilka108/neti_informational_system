@@ -16,7 +16,7 @@ utils = { path = "../utils/" }
 tokio = { version = "1.32.0", features = ["full"] }
 http = { version = "0.2.9" }
 tower = { version = "0.4.13" }
-tower-http = { version = "0.4.4", features = ["tracing", "trace"] }
+tower-http = { version = "0.4.4", features = ["tracing", "trace", "cors"] }
 hyper = { version = "0.14.27", features = ["full"] }
 axum = { version = "0.6.20", features = ["http2", "tracing", "headers", "macros"] }
 axum-extra = { version = "0.8.0", features = ["typed-routing"] }

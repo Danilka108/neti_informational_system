@@ -36,6 +36,10 @@ impl PgUserSessionRepo {
     }
 
     async fn update(&self, entity: Entity) -> Result<UserSessions, anyhow::Error> {
+        let cond = Expr::col(UserSessionsIden::UserId)
+            .eq(entity.id.value.user_id.value)
+            .and(Expr::col(UserSessionsIden::Metadata).eq(entity.id.value.metadata.clone()));
+
         let mut query = Query::update();
         let query = query
             .table(UserSessionsIden::Table)
@@ -51,6 +55,7 @@ impl PgUserSessionRepo {
                     entity.expires_at.seconds.val.into(),
                 ),
             ])
+            .and_where(cond)
             .returning_all();
 
         fetch_one(&self.txn, query).await

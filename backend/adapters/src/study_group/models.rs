@@ -74,8 +74,10 @@ impl Display for PgQualification {
 #[sqlx(type_name = "training_kind")]
 #[sqlx(rename_all = "lowercase")]
 pub enum PgTrainingKind {
-    FullTime,
-    Correspondence,
+    // TODO
+    full_time,
+    // TODO
+    correspondence,
 }
 impl Display for PgTrainingKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -83,8 +85,8 @@ impl Display for PgTrainingKind {
             f,
             "{}",
             match self {
-                PgTrainingKind::FullTime => "full_time",
-                PgTrainingKind::Correspondence => "correspondence",
+                PgTrainingKind::full_time => "full_time",
+                PgTrainingKind::correspondence => "correspondence",
             }
         )
     }
@@ -104,8 +106,8 @@ impl From<Qualification> for PgQualification {
 impl From<TrainingKind> for PgTrainingKind {
     fn from(value: TrainingKind) -> Self {
         match value {
-            TrainingKind::FullTime => PgTrainingKind::FullTime,
-            TrainingKind::Correspondence => PgTrainingKind::Correspondence,
+            TrainingKind::FullTime => PgTrainingKind::full_time,
+            TrainingKind::Correspondence => PgTrainingKind::correspondence,
         }
     }
 }
@@ -124,8 +126,8 @@ impl From<PgQualification> for Qualification {
 impl From<PgTrainingKind> for TrainingKind {
     fn from(value: PgTrainingKind) -> Self {
         match value {
-            PgTrainingKind::FullTime => TrainingKind::FullTime,
-            PgTrainingKind::Correspondence => TrainingKind::Correspondence,
+            PgTrainingKind::full_time => TrainingKind::FullTime,
+            PgTrainingKind::correspondence => TrainingKind::Correspondence,
         }
     }
 }

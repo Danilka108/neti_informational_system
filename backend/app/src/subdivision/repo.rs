@@ -14,6 +14,8 @@ pub trait Repo {
 
     async fn find_by_name(&self, name: String) -> Result<Option<Entity>, anyhow::Error>;
 
+    async fn list(&self) -> Result<Vec<Entity>, anyhow::Error>;
+
     async fn list_by_university(
         &self,
         university_id: university::EntityId,

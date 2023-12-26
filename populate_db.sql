@@ -1,8 +1,8 @@
 delete from class_teachers;
 delete from classes;
 delete from class_kinds;
-delete from students_attestations;
-delete from attestations_examiners;
+delete from student_attestations;
+delete from attestation_examiners;
 delete from attestations;
 delete from curriculum_modules;
 delete from disciplines;
@@ -25,9 +25,9 @@ insert into users (id, email, password) values (0, 'd.churikov@stud.nstu.ru', 'u
 insert into users (id, email, password) values (1, 'tomilov@corp.nstu.ru', 'user');
 insert into users (id, email, password) values (2, 'reva@corp.nstu.ru', 'user');
 insert into user_sessions (user_id, metadata, refresh_token, expires_at) values (0, 'chrome', 'token', 234234);
-insert into persons (id, user_id) values (0, 0);
-insert into persons (id, user_id) values (1, 1);
-insert into persons (id, user_id) values (2, 2);
+insert into persons (id, user_id, full_name) values (0, 0, 'danil churickov');
+insert into persons (id, user_id, full_name) values (1, 1, 'tomilov ivan nokolaevich');
+insert into persons (id, user_id, full_name) values (2, 2, 'reva ivan nikolaevich');
 insert into passports (id, person_id, first_name, last_name, patronymic, date_of_birth, date_of_issue, number, series, gender)
   values (0, 0, 'danil', 'churikov', 'igorevich', '2002-12-31 22:00:00', '2022-03-01 12:00:00', '444444', '4444', 'male');
 
@@ -51,9 +51,9 @@ insert into disciplines (id, department_id, name) values (0, 0, 'informatics');
 insert into curriculum_modules (id, curriculum_id, discipline_id, semester) values (0, 0, 0, 1);
 
 insert into attestations (id, curriculum_module_id, kind, duration_in_hours) values (0, 0, 'exam', 100);
-insert into attestations_examiners (examiner_id, attestation_id) values (0, 0);
-insert into students_attestations (student_id, attestation_id, score, rating_contributor_id)
-  values (0, 0, 99, 2);
+insert into attestation_examiners (examiner_id, attestation_id) values (0, 0);
+insert into student_attestations (student_id, attestation_id, score)
+  values (0, 0, 99);
 
 insert into class_kinds (name) values ('lection');
 insert into classes (id, curriculum_module_id, kind_name, duration_in_hours) values (0, 0, 'lection', 2);
