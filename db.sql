@@ -1,3 +1,5 @@
+-- TODO use left join instead of inner join in queries
+
 DROP SCHEMA IF EXISTS public CASCADE;
 CREATE SCHEMA public;
 
@@ -8,8 +10,6 @@ CREATE TYPE gender AS ENUM ('male', 'female');
 CREATE FUNCTION is_numeric(text) RETURNS boolean AS
     'SELECT $1 ~ ''^[0-9]+$'' ' LANGUAGE 'sql';
 
--- CREATE TYPE user_role AS ENUM ('ADMIN');
-
 CREATE TYPE teacher_kind AS enum ('assistant', 'regular_teacher', 'senior_teacher', 'associate_professor', 'professor');
 
 CREATE TYPE qualification AS enum ('bachelor', 'master', 'postgraduate', 'doctorate');
@@ -17,8 +17,6 @@ CREATE TYPE qualification AS enum ('bachelor', 'master', 'postgraduate', 'doctor
 CREATE TYPE training_kind AS enum ('full_time', 'correspondence');
 
 CREATE TYPE attestation_kind AS enum ('test', 'diff_test', 'exam');
-
--- TODO use left join instead of inner join in queries
 
 create table users (
   id serial primary key,
